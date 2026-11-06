@@ -1,0 +1,30 @@
+name: Cadastro automático de aplicações
+
+on:
+  schedule:
+    - cron: '0 10 * * *' # todo dia às 7h (Brasília)
+  workflow_dispatch:
+    inputs:
+      simular:
+        description: 'Só mostrar o que faria, sem gravar'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Ler nucleo.json dos repositórios e atualizar o portal
+        run: node scripts/sincronizar-aplicacoes.mjs
+        env:
+          NUCLEO_GH_TOKEN: ${{ secrets.NUCLEO_GH_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SIMULAR: ${{ inputs.simular && '1' || '0' }}
