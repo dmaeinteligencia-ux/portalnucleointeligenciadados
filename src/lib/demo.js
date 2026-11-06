@@ -1,7 +1,7 @@
 // Dados de exemplo usados enquanto o Supabase não está configurado.
 export const demo = {
   autorizados: [
-    { email: 'euthigosilveira@gmail.com', nome: 'Thiago Silveira', papel: 'admin' },
+    { email: 'euthiagosilveira@gmail.com', nome: 'Thiago Silveira', papel: 'admin' },
     { email: 'nativowesley@gmail.com', nome: 'Wesley Nativo', papel: 'admin' },
     { email: 'servidor@dmae.exemplo', nome: 'Servidor de exemplo', papel: 'usuario' },
   ],
