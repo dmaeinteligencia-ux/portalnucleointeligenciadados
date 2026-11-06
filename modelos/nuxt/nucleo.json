@@ -1,0 +1,10 @@
+{
+  "nome": "Novo sistema",
+  "slug": "novo-sistema",
+  "descricao": "O que o sistema faz, em uma frase.",
+  "area": "Área do DMAE",
+  "status": "desenvolvimento",
+  "url": "https://novo-sistema.vercel.app",
+  "responsavel": "Nome de quem cuida do sistema",
+  "portal": true
+}

@@ -1,0 +1,19 @@
+{
+  "name": "nucleo-modelo-nuxt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "verificar-portal": "node verificar-portal.mjs"
+  },
+  "dependencies": {
+    "@nuxtjs/supabase": "^2.0.0",
+    "nuxt": "^4.0.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0"
+  }
+}
