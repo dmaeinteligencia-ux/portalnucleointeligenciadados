@@ -9,14 +9,30 @@ const carregado = ref(false)
 const carregando = ref(true)
 const moldura = ref(null)
 const telaCheia = ref(false)
+const bloqueado = ref(false)
+
+// A aplicação embutida avisa se o navegador deixa o login funcionar dentro do quadro
+function aoReceberMensagem(evento) {
+  if (!app.value?.url) return
+  let origem
+  try { origem = new URL(app.value.url).origin } catch { return }
+  if (evento.origin !== origem) return
+  const tipo = evento.data?.tipo
+  if (tipo === 'nucleo:sessao-bloqueada') bloqueado.value = true
+  else if (tipo === 'nucleo:sessao-ok') bloqueado.value = false
+}
 
 onMounted(async () => {
   app.value = await obterAplicacao(route.params.slug)
   carregado.value = true
   if (app.value?.url) registrarAcesso(app.value)
   document.addEventListener('fullscreenchange', aoMudarTela)
+  window.addEventListener('message', aoReceberMensagem)
 })
-onBeforeUnmount(() => document.removeEventListener('fullscreenchange', aoMudarTela))
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', aoMudarTela)
+  window.removeEventListener('message', aoReceberMensagem)
+})
 
 function aoMudarTela() { telaCheia.value = !!document.fullscreenElement }
 function alternarTelaCheia() {
@@ -44,6 +60,11 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
     <div ref="moldura" class="moldura-app">
       <span class="canto c1" /><span class="canto c2" /><span class="canto c3" /><span class="canto c4" />
       <div v-if="carregando" class="carregando-app"><span class="anel-carga" /><small>Conectando à {{ app.nome }}…</small></div>
+      <div v-if="bloqueado" class="bloqueio-app" role="alert">
+        <strong>Este navegador bloqueou o login dentro do portal</strong>
+        <p>O Safari e navegadores que bloqueiam cookies de terceiros não deixam a {{ app.nome }} manter o login aqui dentro. Abra em nova aba para usar normalmente.</p>
+        <button class="botao brilho" @click="novaAba">Abrir em nova aba ↗</button>
+      </div>
       <iframe :src="app.url" :title="app.nome" allow="clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin" @load="carregando = false" />
     </div>
     <p class="dica-embutida">Se a tela ficar em branco ou o login não completar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
