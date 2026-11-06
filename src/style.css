@@ -309,6 +309,15 @@ select option { background: var(--fundo-2); }
 .numero strong { font-family: var(--fonte-hud); font-size: 2rem; color: var(--ciano-claro); text-shadow: var(--brilho); }
 .numero span { color: var(--suave); }
 
+.quem-acessa { border: 1px solid var(--borda); border-radius: 10px; padding: .8rem 1rem 1rem; margin: 0; }
+.quem-acessa legend { font-family: var(--fonte-hud); font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ciano); padding: 0 .4rem; }
+.quem-acessa p { margin: 0 0 .7rem; }
+.lista-pessoas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .5rem; }
+.pessoa { padding: .5rem .7rem; border: 1px solid var(--borda); border-radius: 8px; background: rgba(56, 214, 255, 0.03); cursor: pointer; }
+.pessoa:has(input:checked) { border-color: var(--borda-forte); background: rgba(56, 214, 255, 0.1); box-shadow: var(--brilho); }
+.pessoa span { display: grid; line-height: 1.2; }
+.pessoa small { color: var(--suave); font-size: .8rem; font-weight: 400; }
+
 /* Animações */
 @keyframes surgir { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes surgir-lado { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }

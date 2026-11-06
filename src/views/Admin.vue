@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import {
   listarAplicacoes, salvarAplicacao, listarAutorizados, autorizar, removerAutorizado,
-  listarAvisos, salvarAviso, listarAcessos, rotuloStatus,
+  listarAvisos, salvarAviso, listarAcessos, listarPermissoes, salvarPermissoes, rotuloStatus,
 } from '../lib/dados'
 import { auth } from '../lib/auth'
 
@@ -11,6 +11,8 @@ const apps = ref([])
 const pessoas = ref([])
 const avisos = ref([])
 const acessos = ref([])
+const permissoes = ref([])
+const escolhidos = ref([])
 
 const appVazia = () => ({ nome: '', slug: '', descricao: '', area: '', status: 'producao', url: '', responsavel: '', ativo: true, restrita: false, ordem: 100 })
 const editandoApp = ref(null)
@@ -19,8 +21,8 @@ const novoAviso = reactive({ titulo: '', texto: '', ativo: true })
 const mensagem = ref('')
 
 async function carregar() {
-  ;[apps.value, pessoas.value, avisos.value, acessos.value] = await Promise.all([
-    listarAplicacoes({ todas: true }), listarAutorizados(), listarAvisos({ todos: true }), listarAcessos(),
+  ;[apps.value, pessoas.value, avisos.value, acessos.value, permissoes.value] = await Promise.all([
+    listarAplicacoes({ todas: true }), listarAutorizados(), listarAvisos({ todos: true }), listarAcessos(), listarPermissoes(),
   ])
 }
 onMounted(carregar)
@@ -30,10 +32,16 @@ const dataHora = d => new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', 
 const avisar = t => { mensagem.value = t; setTimeout(() => (mensagem.value = ''), 3000) }
 const gerarSlug = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
+const pessoasComAcesso = id => permissoes.value.filter(p => p.aplicacao_id === id).map(p => p.email)
+function editarApp(app) {
+  editandoApp.value = { ...app }
+  escolhidos.value = app.id ? pessoasComAcesso(app.id) : []
+}
 async function gravarApp() {
   const app = { ...editandoApp.value }
   if (!app.slug) app.slug = gerarSlug(app.nome)
-  await salvarAplicacao(app)
+  const id = await salvarAplicacao(app)
+  if (app.restrita) await salvarPermissoes(id, escolhidos.value)
   editandoApp.value = null
   await carregar()
   avisar('Aplicação salva.')
@@ -73,7 +81,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
 
   <!-- Aplicações -->
   <section v-if="aba === 'aplicacoes'">
-    <div class="barra"><button class="botao" @click="editandoApp = appVazia()">Nova aplicação</button></div>
+    <div class="barra"><button class="botao" @click="editarApp(appVazia())">Nova aplicação</button></div>
     <form v-if="editandoApp" class="hud-painel formulario" @submit.prevent="gravarApp">
       <h2>{{ editandoApp.id ? 'Editar aplicação' : 'Nova aplicação' }}</h2>
       <div class="campos">
@@ -88,6 +96,17 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
         <label class="largo">Descrição<textarea v-model="editandoApp.descricao" rows="3" /></label>
         <label class="caixa"><input v-model="editandoApp.ativo" type="checkbox" /> Visível no portal</label>
         <label class="caixa"><input v-model="editandoApp.restrita" type="checkbox" /> Restrita a pessoas específicas</label>
+        <fieldset v-if="editandoApp.restrita" class="largo quem-acessa">
+          <legend>Quem pode ver esta aplicação</legend>
+          <p class="suave pequeno">Administradores veem todas as aplicações. Escolha os usuários que também podem ver esta.</p>
+          <div class="lista-pessoas">
+            <label v-for="p in pessoas.filter(x => x.papel !== 'admin')" :key="p.email" class="caixa pessoa">
+              <input v-model="escolhidos" type="checkbox" :value="p.email" />
+              <span><strong>{{ p.nome || p.email }}</strong><small v-if="p.nome">{{ p.email }}</small></span>
+            </label>
+            <p v-if="!pessoas.some(x => x.papel !== 'admin')" class="suave pequeno">Nenhum usuário autorizado ainda. Cadastre na aba Usuários autorizados.</p>
+          </div>
+        </fieldset>
       </div>
       <div class="barra">
         <button class="botao">Salvar</button>
@@ -95,14 +114,15 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
       </div>
     </form>
     <table class="tabela">
-      <thead><tr><th>Aplicação</th><th>Área</th><th>Status</th><th>Visível</th><th></th></tr></thead>
+      <thead><tr><th>Aplicação</th><th>Área</th><th>Status</th><th>Visível</th><th>Quem vê</th><th></th></tr></thead>
       <tbody>
         <tr v-for="app in apps" :key="app.id">
           <td><strong>{{ app.nome }}</strong><br /><small class="suave">{{ app.url || 'sem link' }}</small></td>
           <td>{{ app.area }}</td>
           <td><span class="etiqueta" :class="`status-${app.status}`">{{ rotuloStatus[app.status] }}</span></td>
           <td>{{ app.ativo ? 'Sim' : 'Não' }}</td>
-          <td><button class="botao-link" @click="editandoApp = { ...app }">Editar</button></td>
+          <td>{{ app.restrita ? `${pessoasComAcesso(app.id).length} pessoa(s)` : 'Todos' }}</td>
+          <td><button class="botao-link" @click="editarApp(app)">Editar</button></td>
         </tr>
       </tbody>
     </table>

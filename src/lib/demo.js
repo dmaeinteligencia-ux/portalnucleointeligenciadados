@@ -19,6 +19,7 @@ export const demo = {
       restrita: false, ativo: true, ordem: 20,
     },
   ],
+  permissoes: [],
   avisos: [
     { id: 'v1', titulo: 'Bem-vindo ao portal', texto: 'Todas as aplicações do Núcleo agora ficam reunidas aqui.', ativo: true, publicado_em: '2026-11-06T12:00:00Z' },
   ],

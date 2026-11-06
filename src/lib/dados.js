@@ -6,26 +6,49 @@ const ordenar = lista => [...lista].sort((a, b) => a.ordem - b.ordem || a.nome.l
 const ok = async (consulta) => { const { data, error } = await consulta; if (error) throw error; return data }
 
 export async function listarAplicacoes({ todas = false } = {}) {
-  if (modoDemo) return ordenar(demo.aplicacoes.filter(a => todas || a.ativo))
+  if (modoDemo) {
+    // Imita as regras do banco (RLS): restritas só para admin ou para quem tem permissão
+    const u = auth.usuario, admin = u?.papel === 'admin'
+    const pode = a => admin || !a.restrita || demo.permissoes.some(p => p.aplicacao_id === a.id && p.email === u?.email)
+    return ordenar(demo.aplicacoes.filter(a => (todas || a.ativo) && pode(a)))
+  }
   let q = supabase.from('aplicacoes').select('*').order('ordem').order('nome')
   if (!todas) q = q.eq('ativo', true)
   return ok(q)
 }
 
 export async function obterAplicacao(slug) {
-  if (modoDemo) return demo.aplicacoes.find(a => a.slug === slug) || null
+  if (modoDemo) return (await listarAplicacoes({ todas: auth.usuario?.papel === 'admin' })).find(a => a.slug === slug) || null
   return ok(supabase.from('aplicacoes').select('*').eq('slug', slug).maybeSingle())
 }
 
 export async function salvarAplicacao(app) {
   if (modoDemo) {
-    if (app.id) Object.assign(demo.aplicacoes.find(a => a.id === app.id), app)
-    else demo.aplicacoes.push({ ...app, id: crypto.randomUUID() })
-    return
+    if (app.id) { Object.assign(demo.aplicacoes.find(a => a.id === app.id), app); return app.id }
+    const id = crypto.randomUUID()
+    demo.aplicacoes.push({ ...app, id })
+    return id
   }
   const { id, criado_em, ...campos } = app
-  if (id) await ok(supabase.from('aplicacoes').update(campos).eq('id', id))
-  else await ok(supabase.from('aplicacoes').insert(campos))
+  if (id) { await ok(supabase.from('aplicacoes').update(campos).eq('id', id)); return id }
+  const nova = await ok(supabase.from('aplicacoes').insert(campos).select('id').single())
+  return nova.id
+}
+
+export async function listarPermissoes() {
+  if (modoDemo) return [...demo.permissoes]
+  return ok(supabase.from('permissoes').select('*'))
+}
+
+// Substitui a lista de pessoas com acesso a uma aplicação restrita
+export async function salvarPermissoes(aplicacaoId, emails) {
+  if (modoDemo) {
+    demo.permissoes = demo.permissoes.filter(p => p.aplicacao_id !== aplicacaoId)
+      .concat(emails.map(email => ({ email, aplicacao_id: aplicacaoId })))
+    return
+  }
+  await ok(supabase.from('permissoes').delete().eq('aplicacao_id', aplicacaoId))
+  if (emails.length) await ok(supabase.from('permissoes').insert(emails.map(email => ({ email, aplicacao_id: aplicacaoId }))))
 }
 
 export async function registrarAcesso(app) {
