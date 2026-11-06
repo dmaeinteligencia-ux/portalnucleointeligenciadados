@@ -63,7 +63,8 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
 </script>
 
 <template>
-  <h1>Administração</h1>
+<div>
+  <h1 class="titulo-tela">Administração</h1>
   <div class="abas" role="tablist">
     <button v-for="(rotulo, chave) in { aplicacoes: 'Aplicações', pessoas: 'Usuários autorizados', avisos: 'Avisos', acessos: 'Acessos' }"
       :key="chave" role="tab" :aria-selected="aba === chave" :class="{ ativa: aba === chave }" @click="aba = chave">{{ rotulo }}</button>
@@ -73,7 +74,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
   <!-- Aplicações -->
   <section v-if="aba === 'aplicacoes'">
     <div class="barra"><button class="botao" @click="editandoApp = appVazia()">Nova aplicação</button></div>
-    <form v-if="editandoApp" class="cartao formulario" @submit.prevent="gravarApp">
+    <form v-if="editandoApp" class="hud-painel formulario" @submit.prevent="gravarApp">
       <h2>{{ editandoApp.id ? 'Editar aplicação' : 'Nova aplicação' }}</h2>
       <div class="campos">
         <label>Nome<input v-model="editandoApp.nome" required /></label>
@@ -109,7 +110,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
 
   <!-- Usuários -->
   <section v-if="aba === 'pessoas'">
-    <form class="cartao formulario linha" @submit.prevent="adicionarPessoa">
+    <form class="hud-painel formulario linha" @submit.prevent="adicionarPessoa">
       <label>E-mail<input v-model="novaPessoa.email" type="email" required /></label>
       <label>Nome<input v-model="novaPessoa.nome" /></label>
       <label>Perfil
@@ -131,7 +132,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
 
   <!-- Avisos -->
   <section v-if="aba === 'avisos'">
-    <form class="cartao formulario" @submit.prevent="publicarAviso">
+    <form class="hud-painel formulario" @submit.prevent="publicarAviso">
       <div class="campos">
         <label class="largo">Título<input v-model="novoAviso.titulo" required /></label>
         <label class="largo">Texto<textarea v-model="novoAviso.texto" rows="3" /></label>
@@ -154,7 +155,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
   <!-- Acessos -->
   <section v-if="aba === 'acessos'">
     <div class="resumo">
-      <div v-for="r in acessosPorApp" :key="r.nome" class="cartao numero">
+      <div v-for="r in acessosPorApp" :key="r.nome" class="hud-painel numero">
         <strong>{{ r.total }}</strong><span>acessos à {{ r.nome }}</span>
       </div>
     </div>
@@ -165,4 +166,5 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
       </tbody>
     </table>
   </section>
+</div>
 </template>

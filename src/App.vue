@@ -3,36 +3,57 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, sair } from './lib/auth'
 import { modoDemo } from './lib/supabase'
+import Relogio from './components/Relogio.vue'
 
 const router = useRouter()
 const busca = ref('')
 const buscar = () => router.push({ path: '/aplicacoes', query: busca.value ? { q: busca.value } : {} })
 const fazerSair = async () => { await sair(); router.push('/entrar') }
+const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('')
 </script>
 
 <template>
-  <div v-if="modoDemo" class="faixa-demo">Modo demonstração: dados de exemplo, nada é salvo.</div>
-  <header v-if="auth.usuario" class="topo">
-    <div class="topo-interno">
+  <div class="fundo-grade" aria-hidden="true" />
+  <div v-if="auth.usuario" class="moldura">
+    <aside class="lateral">
       <RouterLink to="/" class="marca">
-        <img src="/favicon.svg" alt="" width="32" height="32" />
-        <span><strong>Núcleo de Inteligência de Dados</strong><small>DMAE</small></span>
+        <span class="marca-icone"><img src="/favicon.svg" alt="" /></span>
+        <span><strong>NÚCLEO</strong><small>Inteligência de Dados</small></span>
       </RouterLink>
       <nav class="menu">
-        <RouterLink to="/">Início</RouterLink>
-        <RouterLink to="/aplicacoes">Aplicações</RouterLink>
-        <RouterLink v-if="auth.usuario.papel === 'admin'" to="/admin">Administração</RouterLink>
+        <RouterLink to="/" class="item"><span class="ic">◈</span>Central</RouterLink>
+        <RouterLink to="/aplicacoes" class="item"><span class="ic">▦</span>Aplicações</RouterLink>
+        <RouterLink v-if="auth.usuario.papel === 'admin'" to="/admin" class="item"><span class="ic">⚙</span>Administração</RouterLink>
       </nav>
-      <form class="busca" @submit.prevent="buscar">
-        <input v-model="busca" type="search" placeholder="Buscar aplicação" aria-label="Buscar aplicação" />
-      </form>
-      <div class="usuario">
-        <span>{{ auth.usuario.nome || auth.usuario.email }}</span>
-        <button class="botao-link" @click="fazerSair">Sair</button>
+      <div class="lateral-rodape">
+        <div class="status-voz">
+          <small>CONEXÃO SEGURA</small>
+          <span class="onda-mini"><i /><i /><i /><i /><i /><i /><i /><i /></span>
+        </div>
+        <img src="/logo-dmae.png" alt="DMAE · Prefeitura de Uberlândia" class="logo-dmae" />
       </div>
+    </aside>
+
+    <div class="principal">
+      <header class="topo">
+        <div class="pilula-status"><span>STATUS DO SISTEMA</span><b><i />{{ modoDemo ? 'DEMONSTRAÇÃO' : 'OPERACIONAL' }}</b></div>
+        <Relogio class="topo-relogio" />
+        <form class="busca" @submit.prevent="buscar">
+          <span aria-hidden="true">⌕</span>
+          <input v-model="busca" type="search" placeholder="Buscar aplicação…" aria-label="Buscar aplicação" />
+        </form>
+        <div class="operador">
+          <span class="operador-texto"><strong>{{ auth.usuario.nome || auth.usuario.email }}</strong><small>{{ auth.usuario.papel === 'admin' ? 'Administrador' : 'Usuário' }}</small></span>
+          <span class="avatar">{{ iniciais(auth.usuario.nome || auth.usuario.email) }}</span>
+          <button class="botao-link" @click="fazerSair">Sair</button>
+        </div>
+      </header>
+      <main class="conteudo">
+        <RouterView v-slot="{ Component, route }">
+          <Transition name="tela" mode="out-in"><component :is="Component" :key="route.fullPath" /></Transition>
+        </RouterView>
+      </main>
     </div>
-  </header>
-  <main :class="{ conteudo: auth.usuario }">
-    <RouterView />
-  </main>
+  </div>
+  <RouterView v-else />
 </template>

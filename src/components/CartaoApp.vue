@@ -1,18 +1,17 @@
 <script setup>
 import { rotuloStatus } from '../lib/dados'
-defineProps({ app: Object })
+import Onda from './Onda.vue'
+defineProps({ app: Object, indice: { type: Number, default: 0 } })
 </script>
 
 <template>
-  <RouterLink :to="`/aplicacoes/${app.slug}`" class="cartao cartao-app">
-    <div class="icone-app" aria-hidden="true">{{ app.nome.charAt(0) }}</div>
-    <div>
-      <h3>{{ app.nome }}</h3>
-      <p>{{ app.descricao }}</p>
-      <div class="etiquetas">
-        <span class="etiqueta">{{ app.area }}</span>
-        <span class="etiqueta" :class="`status-${app.status}`">{{ rotuloStatus[app.status] }}</span>
-      </div>
-    </div>
+  <RouterLink :to="`/aplicacoes/${app.slug}`" class="cartao-app" :style="{ animationDelay: `${150 + indice * 90}ms` }">
+    <span class="icone-app" aria-hidden="true">{{ app.nome.charAt(0) }}</span>
+    <span class="cartao-app-texto">
+      <strong>{{ app.nome }}</strong>
+      <small :class="`st st-${app.status}`"><i />{{ rotuloStatus[app.status] }} · {{ app.area }}</small>
+      <span class="descricao">{{ app.descricao }}</span>
+    </span>
+    <Onda :barras="16" />
   </RouterLink>
 </template>

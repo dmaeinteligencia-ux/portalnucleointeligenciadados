@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { listarAplicacoes, rotuloStatus } from '../lib/dados'
 import CartaoApp from '../components/CartaoApp.vue'
+import HudPanel from '../components/HudPanel.vue'
 
 const route = useRoute()
 const apps = ref([])
@@ -24,7 +25,9 @@ const filtradas = computed(() => {
 </script>
 
 <template>
-  <h1>Aplicações</h1>
+<div>
+  <h1 class="titulo-tela">Aplicações</h1>
+  <HudPanel>
   <div class="filtros">
     <input v-model="busca" type="search" placeholder="Buscar por nome ou descrição" aria-label="Buscar" />
     <select v-model="area" aria-label="Área">
@@ -36,8 +39,10 @@ const filtradas = computed(() => {
       <option v-for="(rotulo, valor) in rotuloStatus" :key="valor" :value="valor">{{ rotulo }}</option>
     </select>
   </div>
-  <p class="suave">{{ filtradas.length }} {{ filtradas.length === 1 ? 'aplicação' : 'aplicações' }}</p>
-  <div class="lista-apps colunas">
-    <CartaoApp v-for="app in filtradas" :key="app.id" :app="app" />
+  <p class="contagem">{{ filtradas.length }} {{ filtradas.length === 1 ? 'aplicação encontrada' : 'aplicações encontradas' }}</p>
+  </HudPanel>
+  <div class="grade-apps colunas">
+    <CartaoApp v-for="(app, i) in filtradas" :key="app.id" :app="app" :indice="i" />
   </div>
+</div>
 </template>
