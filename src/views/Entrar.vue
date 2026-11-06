@@ -47,7 +47,7 @@ async function enviar() {
         <button class="botao brilho" :disabled="enviando">{{ enviando ? 'VERIFICANDO…' : 'RECEBER LINK DE ACESSO' }}</button>
       </form>
 
-      <p v-if="modoDemo" class="dica">Demonstração: use euthigosilveira@gmail.com (admin) ou servidor@dmae.exemplo (usuário).</p>
+      <p v-if="modoDemo" class="dica">Demonstração: use euthiagosilveira@gmail.com (admin) ou servidor@dmae.exemplo (usuário).</p>
       <p class="suave pequeno">Não tem acesso? Fale com o Núcleo de Inteligência de Dados.</p>
     </div>
   </div>

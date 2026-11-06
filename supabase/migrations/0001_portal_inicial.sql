@@ -119,7 +119,7 @@ create policy avisos_admin on public.avisos for all to authenticated
 
 -- Dados iniciais
 insert into public.autorizados (email, papel) values
-  ('euthigosilveira@gmail.com', 'admin'),
+  ('euthiagosilveira@gmail.com', 'admin'),
   ('nativowesley@gmail.com', 'admin')
 on conflict (email) do nothing;
 
