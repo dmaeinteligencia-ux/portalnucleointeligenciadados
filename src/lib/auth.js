@@ -2,7 +2,18 @@ import { reactive } from 'vue'
 import { supabase, modoDemo } from './supabase'
 import { demo } from './demo'
 
-export const auth = reactive({ carregado: false, usuario: null })
+export const auth = reactive({ carregado: false, usuario: null, erroLink: '' })
+
+// Quando o link do e-mail falha, o Supabase volta com o erro no endereço (#error_code=...)
+function lerErroDoLink() {
+  const params = new URLSearchParams(window.location.hash.slice(1))
+  const codigo = params.get('error_code')
+  if (!codigo) return
+  auth.erroLink = codigo === 'otp_expired'
+    ? 'Este link de acesso expirou ou já foi usado. Peça um novo abaixo.'
+    : 'Não foi possível entrar com este link. Peça um novo abaixo.'
+  history.replaceState(null, '', window.location.pathname)
+}
 
 async function carregarPerfil(email) {
   if (!email) return null
@@ -12,6 +23,7 @@ async function carregarPerfil(email) {
 }
 
 export async function iniciarAuth() {
+  lerErroDoLink()
   if (modoDemo) {
     const salvo = sessionStorage.getItem('demo-email')
     auth.usuario = await carregarPerfil(salvo)
