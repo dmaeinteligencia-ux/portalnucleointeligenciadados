@@ -8,6 +8,7 @@ export const router = createRouter({
     { path: '/', component: () => import('./views/Inicio.vue') },
     { path: '/aplicacoes', component: () => import('./views/Aplicacoes.vue') },
     { path: '/aplicacoes/:slug', component: () => import('./views/Detalhe.vue') },
+    { path: '/aplicacoes/:slug/usar', component: () => import('./views/Embutida.vue') },
     { path: '/admin', component: () => import('./views/Admin.vue'), meta: { admin: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

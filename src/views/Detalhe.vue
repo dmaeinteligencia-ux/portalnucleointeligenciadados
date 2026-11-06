@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import HudPanel from '../components/HudPanel.vue'
 import Onda from '../components/Onda.vue'
 import { obterAplicacao, registrarAcesso, rotuloStatus } from '../lib/dados'
 
 const route = useRoute()
+const router = useRouter()
 const app = ref(null)
 const carregado = ref(false)
 
@@ -13,6 +14,8 @@ onMounted(async () => {
   app.value = await obterAplicacao(route.params.slug)
   carregado.value = true
 })
+
+const usarNoPortal = () => router.push(`/aplicacoes/${app.value.slug}/usar`)
 
 async function abrir() {
   await registrarAcesso(app.value)
@@ -34,7 +37,10 @@ async function abrir() {
         </div>
       </div>
       <Onda :barras="28" class="onda-detalhe" />
-      <button class="botao brilho" :disabled="!app.url" @click="abrir">{{ app.url ? 'Abrir aplicação' : 'Link a definir' }}</button>
+      <div class="acoes-detalhe">
+        <button class="botao brilho" :disabled="!app.url" @click="usarNoPortal">{{ app.url ? 'Usar no portal' : 'Link a definir' }}</button>
+        <button v-if="app.url" class="botao secundario" @click="abrir">Abrir em nova aba ↗</button>
+      </div>
     </div>
     <p>{{ app.descricao }}</p>
     <dl class="ficha">
