@@ -1,14 +1,14 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { entrar } from '../lib/auth'
+import { auth, entrar } from '../lib/auth'
 import { modoDemo } from '../lib/supabase'
 import NucleoOrb from '../components/NucleoOrb.vue'
 
 const router = useRouter()
 const email = ref('')
 const enviando = ref(false)
-const erro = ref('')
+const erro = ref(auth.erroLink)
 const enviado = ref(false)
 
 async function enviar() {
