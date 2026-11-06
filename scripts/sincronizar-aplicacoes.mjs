@@ -124,6 +124,7 @@ for (const repo of repos) {
   const ficha = await lerFicha(repo)
   if (!ficha) continue
   if (ficha.invalido) { erros++; anotar(`- ⚠️ ${repo.name}: nucleo.json inválido (não é JSON)`); continue }
+  if (ficha.nome === 'Novo sistema' || ficha.slug === 'novo-sistema') { anotar(`- ${repo.name}: nucleo.json ainda não preenchido, ignorado`); continue }
   if (ficha.portal === false) { anotar(`- ${repo.name}: fora do portal ("portal": false)`); continue }
   const { erros: problemas, dados } = validar(ficha, repo)
   if (problemas.length) { erros++; anotar(`- ⚠️ ${repo.name}: ${problemas.join('; ')}`); continue }
