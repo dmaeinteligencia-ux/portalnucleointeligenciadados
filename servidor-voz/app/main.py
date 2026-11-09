@@ -34,7 +34,7 @@ TAXA = 16000
 MAX_FRASES = 600
 MAX_SESSAO_S = 60 * 60 * 8
 GEMINI_CHAVE = os.environ.get("GEMINI_API_KEY", "").strip()
-GEMINI_MODELO = os.environ.get("GEMINI_MODELO", "gemini-2.5-flash")
+GEMINI_MODELO = os.environ.get("GEMINI_MODELO", "gemini-flash-lite-latest")
 MAX_FALA_S = 15  # trecho de áudio guardado em memória para o Gemini (nunca gravado em disco)
 MAX_GEMINI_POR_SESSAO = 60
 LIMIAR_VOZ = int(os.environ.get("VOZ_LIMIAR", "600"))  # volume (RMS) a partir do qual um trecho conta como fala
@@ -168,8 +168,12 @@ async def perguntar_gemini(pcm: bytes, apps) -> dict:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODELO}:generateContent"
     async with httpx.AsyncClient(timeout=20) as cliente:
         r = await cliente.post(url, headers={"x-goog-api-key": GEMINI_CHAVE}, json=corpo)
+        if r.status_code == 400 and "thinking" in r.text.lower():
+            # modelo que não aceita ajuste de raciocínio: tenta sem ele
+            corpo["generationConfig"].pop("thinkingConfig", None)
+            r = await cliente.post(url, headers={"x-goog-api-key": GEMINI_CHAVE}, json=corpo)
     if r.status_code != 200:
-        raise RuntimeError(f"Gemini respondeu {r.status_code}: {r.text[:200]}")
+        raise RuntimeError(f"Gemini ({GEMINI_MODELO}) respondeu {r.status_code}: {r.text[:500]}")
     texto = r.json()["candidates"][0]["content"]["parts"][0]["text"]
     resposta = json.loads(texto)
     return {k: resposta.get(k) for k in ("transcricao", "acao", "slug", "nova_aba", "para", "fala")}
