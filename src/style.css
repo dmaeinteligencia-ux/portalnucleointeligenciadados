@@ -389,3 +389,38 @@ select option { background: var(--fundo-2); }
 }
 .bloqueio-app strong { font-family: 'Orbitron', sans-serif; color: var(--ciano); letter-spacing: .04em; }
 .bloqueio-app p { max-width: 32rem; margin: 0; color: var(--texto-suave, #9fb4c8); }
+
+/* Comandos de voz */
+.voz { position: relative; display: flex; align-items: center; }
+.voz-botao {
+  position: relative; width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; border: 1px solid var(--borda-forte);
+  background: radial-gradient(circle, rgba(56, 214, 255, .18), rgba(6, 21, 40, .9)); color: var(--ciano);
+  transition: box-shadow .2s, transform .2s;
+}
+.voz-botao svg { width: 20px; height: 20px; fill: currentColor; }
+.voz-botao:hover { box-shadow: var(--brilho); transform: scale(1.05); }
+.voz-anel { position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; pointer-events: none; }
+.voz-off .voz-botao { opacity: .35; filter: grayscale(1); }
+.voz-conectando .voz-anel { border-top-color: var(--ciano); animation: giro 1s linear infinite; }
+.voz-ouvindo .voz-anel { border-color: rgba(56, 214, 255, .5); animation: pulsar-voz 2.2s ease-in-out infinite; }
+.voz-comando .voz-anel, .voz-direto .voz-anel { border-color: var(--verde); box-shadow: 0 0 16px var(--verde); animation: pulsar-voz .9s ease-in-out infinite; }
+.voz-comando .voz-botao, .voz-direto .voz-botao { color: var(--verde); }
+.voz-erro .voz-botao { color: var(--vermelho); border-color: var(--vermelho); }
+@keyframes giro { to { transform: rotate(360deg); } }
+@keyframes pulsar-voz { 50% { transform: scale(1.12); opacity: .55; } }
+.voz-balao {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; min-width: 220px; max-width: 320px;
+  display: flex; align-items: center; gap: .6rem; padding: .55rem .8rem; border-radius: 10px;
+  border: 1px solid var(--borda-forte); background: var(--painel-forte); box-shadow: var(--brilho);
+  font-size: .9rem;
+}
+.voz-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voz-onda { display: flex; gap: 2px; align-items: center; height: 18px; }
+.voz-onda i { width: 3px; height: 100%; background: var(--ciano); border-radius: 2px; animation: onda 1s ease-in-out infinite; }
+.voz-onda i:nth-child(2) { animation-delay: .15s; } .voz-onda i:nth-child(3) { animation-delay: .3s; } .voz-onda i:nth-child(4) { animation-delay: .45s; }
+.voz-comando .voz-onda i, .voz-direto .voz-onda i { background: var(--verde); }
+.voz-erro .voz-onda { display: none; }
+.balao-enter-active, .balao-leave-active { transition: opacity .2s, transform .2s; }
+.balao-enter-from, .balao-leave-to { opacity: 0; transform: translateY(-6px); }
+@media (prefers-reduced-motion: reduce) { .voz-anel, .voz-onda i { animation: none !important; } }
