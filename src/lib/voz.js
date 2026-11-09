@@ -179,6 +179,11 @@ export async function ligar({ frases, aoTexto }) {
     const fonte = ctx.createMediaStreamSource(stream)
     const no = new AudioWorkletNode(ctx, 'captura-nucleo')
     fonte.connect(no)
+    // O Chrome só processa o nó se ele chegar ao destino; o ganho zero evita ouvir o próprio microfone.
+    const mudo = ctx.createGain()
+    mudo.gain.value = 0
+    no.connect(mudo).connect(ctx.destination)
+    if (ctx.state === 'suspended') await ctx.resume()
 
     const ws = new WebSocket(VOZ_URL.replace(/^http/, 'ws') + '/escuta')
     ws.binaryType = 'arraybuffer'

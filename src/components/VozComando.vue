@@ -22,7 +22,7 @@ const balao = computed(() => {
   if (voz.estado === 'erro') return voz.erro
   if (voz.parcial) return voz.parcial
   if (voz.estado === 'comando' || direto.value) return 'Pode falar…'
-  return voz.resposta
+  return voz.resposta || (voz.ultimo ? `Ouvi: “${voz.ultimo}”` : '')
 })
 
 async function carregarApps() {
@@ -31,6 +31,7 @@ async function carregarApps() {
 }
 
 async function executar(texto) {
+  voz.resposta = ''
   const acao = interpretar(texto, apps.value, { exigirPalavra: !direto.value && voz.estado !== 'comando' })
   if (!acao) return
   clearTimeout(prazoComando)

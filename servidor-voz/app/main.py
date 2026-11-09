@@ -129,6 +129,7 @@ async def escuta(ws: WebSocket):
 
     comeco = time.time()
     ultimo_parcial = ""
+    recebido = 0
     try:
         while time.time() - comeco < MAX_SESSAO_S:
             mensagem = await ws.receive()
@@ -144,10 +145,12 @@ async def escuta(ws: WebSocket):
             dados = mensagem.get("bytes")
             if not dados:
                 continue
+            recebido += len(dados)
             final = await asyncio.to_thread(reconhecedor.AcceptWaveform, dados)
             if final:
                 texto = json.loads(reconhecedor.Result()).get("text", "").strip()
                 ultimo_parcial = ""
+                log.info("ouvido: %r", texto)
                 if texto and texto != "[unk]":
                     await ws.send_json({"tipo": "final", "texto": texto})
             else:
@@ -158,7 +161,7 @@ async def escuta(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     finally:
-        log.info("escuta encerrada para %s", email)
+        log.info("escuta encerrada para %s (%.1f s de áudio)", email, recebido / (TAXA * 2))
 
 
 @app.exception_handler(Exception)
