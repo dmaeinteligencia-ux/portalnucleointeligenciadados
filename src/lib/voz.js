@@ -84,11 +84,14 @@ export function montarFrases(apps) {
 
 // Transforma o texto reconhecido numa ação.
 export function interpretar(texto, apps, { exigirPalavra = true } = {}) {
-  let t = normalizar(texto)
+  // O reconhecedor marca ruído e palavras fora da lista como [unk]; o comando vale a partir da palavra de ativação.
+  let t = normalizar((texto || '').replace(/\[unk\]/g, ' '))
   const palavra = normalizar(PALAVRA)
-  const temPalavra = t === palavra || t.startsWith(palavra + ' ')
+  const palavras = t.split(' ')
+  const posicao = palavras.lastIndexOf(palavra)
+  const temPalavra = posicao !== -1
   if (exigirPalavra && !temPalavra) return null
-  if (temPalavra) t = t.slice(palavra.length).trim()
+  if (temPalavra) t = palavras.slice(posicao + 1).join(' ')
   if (!t) return { tipo: 'ativar' }
 
   for (const n of NAVEGACAO) if (n.frases.some((f) => normalizar(f) === t)) return n.acao
@@ -179,6 +182,11 @@ export async function ligar({ frases, aoTexto }) {
     const fonte = ctx.createMediaStreamSource(stream)
     const no = new AudioWorkletNode(ctx, 'captura-nucleo')
     fonte.connect(no)
+    // O Chrome só processa o nó se ele chegar ao destino; o ganho zero evita ouvir o próprio microfone.
+    const mudo = ctx.createGain()
+    mudo.gain.value = 0
+    no.connect(mudo).connect(ctx.destination)
+    if (ctx.state === 'suspended') await ctx.resume()
 
     const ws = new WebSocket(VOZ_URL.replace(/^http/, 'ws') + '/escuta')
     ws.binaryType = 'arraybuffer'
