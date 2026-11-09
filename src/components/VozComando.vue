@@ -17,16 +17,31 @@ const ativo = computed(() => ['conectando', 'ouvindo', 'comando', 'falando'].inc
 const dica = computed(() => {
   if (!voz.disponivel) return 'Comandos de voz: disponível só na rede do DMAE'
   if (voz.estado === 'erro') return voz.erro
-  if (ativo.value) return `Ouvindo. Diga "${PALAVRA}" e o comando (Ctrl+Espaço fala direto). Clique para desligar (a escuta não liga mais sozinha até você religar).`
+  if (ativo.value) return `Ouvindo. Diga "${PALAVRA_VISIVEL}" e o comando (Ctrl+Espaço fala direto). Clique para desligar (a escuta não liga mais sozinha até você religar).`
   return 'Ligar comandos de voz (Ctrl+Espaço). Fica ligado sozinho nas próximas vezes.'
 })
+const PALAVRA_VISIVEL = PALAVRA.toUpperCase()
+const esperando = computed(() => voz.estado === 'comando' || direto.value)
+// Fala parcial só aparece quando é com o portal (depois de "Sane"), não para conversa do ambiente
+const parcialVisivel = computed(() => (esperando.value || voz.parcial.toLowerCase().includes(PALAVRA) ? voz.parcial : ''))
 const balao = computed(() => {
   if (voz.estado === 'erro') return voz.erro
   if (pensando.value) return 'Pensando…'
-  if (voz.parcial) return voz.parcial
-  if (voz.estado === 'comando' || direto.value) return 'Pode falar…'
-  return voz.resposta || (voz.ultimo ? `Ouvi: “${voz.ultimo}”` : '')
+  if (parcialVisivel.value) return parcialVisivel.value
+  if (esperando.value) return 'Pode falar…'
+  return voz.resposta || `Diga “${PALAVRA_VISIVEL}”…`
 })
+// O balão aparece só quando há algo a mostrar e some sozinho; ouvindo em silêncio, fica só o anel do microfone.
+const recente = ref(false)
+let prazoBalao = null
+function mostrarBalao(ms = 5000) {
+  recente.value = true
+  clearTimeout(prazoBalao)
+  prazoBalao = setTimeout(() => (recente.value = false), ms)
+}
+watch(() => voz.resposta, (r) => r && mostrarBalao(6000))
+watch(() => voz.estado, (e, antes) => { if (e === 'ouvindo' && antes === 'conectando') mostrarBalao(4000) })
+const balaoVisivel = computed(() => voz.estado === 'erro' || (ativo.value && (recente.value || pensando.value || esperando.value || !!parcialVisivel.value)))
 
 async function carregarApps() {
   apps.value = await listarAplicacoes().catch(() => [])
@@ -195,9 +210,9 @@ watch(() => router.currentRoute.value.path, (p) => { if (ativo.value && (p === '
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
     </button>
     <Transition name="balao">
-      <div v-if="ativo || voz.estado === 'erro'" class="voz-balao" role="status" aria-live="polite">
+      <div v-if="balaoVisivel" class="voz-balao" role="status" aria-live="polite">
         <span class="voz-onda" aria-hidden="true"><i /><i /><i /><i /><i /></span>
-        <span class="voz-texto">{{ balao || `Diga “${PALAVRA}”…` }}</span>
+        <span class="voz-texto">{{ balao }}</span>
       </div>
     </Transition>
   </div>
