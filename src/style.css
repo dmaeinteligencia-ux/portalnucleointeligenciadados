@@ -427,3 +427,22 @@ select option { background: var(--fundo-2); }
 .balao-enter-active, .balao-leave-active { transition: opacity .2s, transform .2s; }
 .balao-enter-from, .balao-leave-to { opacity: 0; transform: translateY(-6px); }
 @media (prefers-reduced-motion: reduce) { .voz-anel, .voz-onda i { animation: none !important; } }
+
+/* Palco do assistente de voz: a esfera em destaque */
+.voz-palco {
+  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  padding: 16px; background: radial-gradient(circle at 50% 45%, rgba(6, 30, 60, 0.82), rgba(2, 8, 18, 0.94) 70%);
+  backdrop-filter: blur(6px); cursor: pointer;
+}
+.palco-orb { position: relative; width: min(78vmin, 600px); aspect-ratio: 1; }
+.palco-texto { max-width: 680px; min-height: 1.6em; margin: 0; text-align: center; font-size: clamp(1rem, 2.2vw, 1.35rem); color: var(--texto); text-shadow: 0 0 12px rgba(56, 214, 255, .4); }
+.palco-ouvindo .anel { border-color: rgba(52, 245, 164, .45); }
+.palco-ouvindo .orb-texto small { color: var(--verde); }
+.palco-pensando .anel { border-color: rgba(167, 139, 250, .5); animation-duration: 2.5s; }
+.palco-pensando .orb-texto small { color: var(--roxo); }
+.palco-falando .chao { animation-duration: .6s; }
+.palco-enter-active, .palco-leave-active { transition: opacity .35s ease; }
+.palco-enter-active .palco-orb { animation: palco-surgir .45s cubic-bezier(.2, .9, .3, 1.2); }
+.palco-enter-from, .palco-leave-to { opacity: 0; }
+@keyframes palco-surgir { from { transform: scale(.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .palco-enter-active .palco-orb { animation: none; } }
