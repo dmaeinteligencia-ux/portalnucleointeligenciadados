@@ -1,0 +1,30 @@
+# Serviço de voz do Portal do Núcleo. Uso: cp .env.example .env && docker compose up -d --build
+name: voz-nucleo
+
+services:
+  voz:
+    build: ./app
+    restart: unless-stopped
+    env_file: .env
+    mem_limit: 700m
+    cpus: 2
+    expose:
+      - "8000"
+
+  https:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      - voz
+    env_file: .env
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_dados:/data
+      - caddy_config:/config
+    mem_limit: 128m
+
+volumes:
+  caddy_dados:
+  caddy_config:

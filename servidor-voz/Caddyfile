@@ -1,0 +1,17 @@
+{
+	# Certificado próprio (autoridade interna do Caddy). O certificado raiz fica em
+	# /data/caddy/pki/authorities/local/root.crt e precisa ser instalado como confiável nos PCs.
+	default_sni {$VOZ_ENDERECO}
+	skip_install_trust
+}
+
+https://{$VOZ_ENDERECO} {
+	tls internal
+	encode gzip
+	reverse_proxy voz:8000
+	header -Server
+	log {
+		output stdout
+		format console
+	}
+}

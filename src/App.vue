@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { auth, sair } from './lib/auth'
 import { modoDemo } from './lib/supabase'
 import Relogio from './components/Relogio.vue'
+import VozComando from './components/VozComando.vue'
 
 const router = useRouter()
 const busca = ref('')
@@ -42,6 +43,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
           <span aria-hidden="true">⌕</span>
           <input v-model="busca" type="search" placeholder="Buscar aplicação…" aria-label="Buscar aplicação" />
         </form>
+        <VozComando />
         <div class="operador">
           <span class="operador-texto"><strong>{{ auth.usuario.nome || auth.usuario.email }}</strong><small>{{ auth.usuario.papel === 'admin' ? 'Administrador' : 'Usuário' }}</small></span>
           <span class="avatar">{{ iniciais(auth.usuario.nome || auth.usuario.email) }}</span>
