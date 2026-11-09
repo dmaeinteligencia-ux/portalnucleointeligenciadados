@@ -162,16 +162,11 @@ async def perguntar_gemini(pcm: bytes, apps) -> dict:
         "generationConfig": {
             "responseMimeType": "application/json",
             "temperature": 0.1,
-            "thinkingConfig": {"thinkingBudget": 0},  # resposta rápida, sem raciocínio longo
         },
     }
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODELO}:generateContent"
     async with httpx.AsyncClient(timeout=20) as cliente:
         r = await cliente.post(url, headers={"x-goog-api-key": GEMINI_CHAVE}, json=corpo)
-        if r.status_code == 400 and "thinking" in r.text.lower():
-            # modelo que não aceita ajuste de raciocínio: tenta sem ele
-            corpo["generationConfig"].pop("thinkingConfig", None)
-            r = await cliente.post(url, headers={"x-goog-api-key": GEMINI_CHAVE}, json=corpo)
     if r.status_code != 200:
         raise RuntimeError(f"Gemini ({GEMINI_MODELO}) respondeu {r.status_code}: {r.text[:500]}")
     texto = r.json()["candidates"][0]["content"]["parts"][0]["text"]
