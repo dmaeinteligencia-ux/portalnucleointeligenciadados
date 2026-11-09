@@ -6,7 +6,9 @@ e devolve o texto. O áudio não é gravado em disco nem sai do servidor.
 
 Só atende quem está logado no portal: o token do Supabase é conferido antes do áudio.
 """
+import array
 import asyncio
+import math
 import base64
 import io
 import json
@@ -35,6 +37,13 @@ GEMINI_CHAVE = os.environ.get("GEMINI_API_KEY", "").strip()
 GEMINI_MODELO = os.environ.get("GEMINI_MODELO", "gemini-2.5-flash")
 MAX_FALA_S = 15  # trecho de áudio guardado em memória para o Gemini (nunca gravado em disco)
 MAX_GEMINI_POR_SESSAO = 60
+LIMIAR_VOZ = int(os.environ.get("VOZ_LIMIAR", "600"))  # volume (RMS) a partir do qual um trecho conta como fala
+MIN_FALA_MS = 400  # fala mínima para um trecho não reconhecido valer como pedido
+
+
+def volume(pcm: bytes) -> float:
+    amostras = array.array("h", pcm[: len(pcm) - len(pcm) % 2])
+    return math.sqrt(sum(a * a for a in amostras) / len(amostras)) if amostras else 0.0
 
 modelo = Model(MODELO)
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -193,6 +202,7 @@ async def escuta(ws: WebSocket):
     ultimo_parcial = ""
     recebido = 0
     fala = bytearray()  # áudio da frase atual, só em memória
+    fala_ms = 0  # quanto da frase atual teve volume de voz
     ultima_fala = b""
     pedidos_gemini = 0
     try:
@@ -226,6 +236,8 @@ async def escuta(ws: WebSocket):
                 continue
             recebido += len(dados)
             fala.extend(dados)
+            if volume(dados) >= LIMIAR_VOZ:
+                fala_ms += len(dados) * 1000 // (TAXA * 2)
             if len(fala) > MAX_FALA_S * TAXA * 2:
                 del fala[: len(fala) - MAX_FALA_S * TAXA * 2]
             final = await asyncio.to_thread(reconhecedor.AcceptWaveform, dados)
@@ -233,15 +245,18 @@ async def escuta(ws: WebSocket):
                 bruto = json.loads(reconhecedor.Result()).get("text", "").split()
                 texto = " ".join(p for p in bruto if p != "[unk]")
                 # incompleto: havia fala fora da lista de comandos (o portal pode pedir ao Gemini para entender)
-                incompleto = "[unk]" in bruto
+                # Com a lista restrita, o reconhecedor às vezes devolve vazio para uma frase livre; o volume mostra que houve fala
+                incompleto = "[unk]" in bruto or (not texto and fala_ms >= MIN_FALA_MS)
+                if not texto and not incompleto and fala_ms:
+                    log.info("final vazio (%d ms com voz, bruto %r)", fala_ms, " ".join(bruto))
+                voz_ms, fala_ms = fala_ms, 0
                 if texto or incompleto:
                     ultima_fala = bytes(fala)
                 fala = bytearray()
                 ultimo_parcial = ""
                 if texto or incompleto:
-                    log.info("ouvido: %r%s", texto, " (+ fala fora da lista)" if incompleto else "")
-                if texto or incompleto:
-                    await ws.send_json({"tipo": "final", "texto": texto, "incompleto": incompleto})
+                    log.info("ouvido: %r%s (bruto %r, %d ms com voz)", texto, " (+ fala fora da lista)" if incompleto else "", " ".join(bruto), voz_ms)
+                    await ws.send_json({"tipo": "final", "texto": texto, "incompleto": incompleto, "voz_ms": voz_ms})
             else:
                 parcial = " ".join(p for p in json.loads(reconhecedor.PartialResult()).get("partial", "").split() if p != "[unk]")
                 if parcial and parcial != ultimo_parcial:
