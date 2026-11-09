@@ -28,6 +28,25 @@ function variantes(nome) {
   return saida
 }
 
+// Preferência de escuta automática (por navegador). Começa ligada; desligar pelo botão vale até religar.
+function lerAutomatica() {
+  try { return localStorage.getItem('voz-automatica') !== '0' } catch { return true }
+}
+export function definirAutomatica(sim) {
+  voz.automatica = sim
+  try { localStorage.setItem('voz-automatica', sim ? '1' : '0') } catch { /* sem armazenamento */ }
+}
+
+// A escuta automática só liga sozinha se o microfone já foi permitido antes (senão o navegador pediria permissão sem clique).
+export async function microfonePermitido() {
+  try {
+    const p = await navigator.permissions.query({ name: 'microphone' })
+    return p.state === 'granted'
+  } catch {
+    return false
+  }
+}
+
 export const voz = reactive({
   disponivel: false, // serviço alcançável a partir deste computador
   verificado: false,
@@ -37,6 +56,7 @@ export const voz = reactive({
   resposta: '', // o que o portal respondeu
   erro: '',
   gemini: false, // o serviço tem a inteligência artificial (Gemini) configurada
+  automatica: lerAutomatica(), // liga a escuta sozinha ao abrir o portal
 })
 
 const suportado = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && !!window.AudioWorkletNode && !!window.WebSocket
@@ -209,7 +229,16 @@ export async function ligar({ frases, aoTexto, aoAcao }) {
     const mudo = ctx.createGain()
     mudo.gain.value = 0
     no.connect(mudo).connect(ctx.destination)
-    if (ctx.state === 'suspended') await ctx.resume()
+    // Sem um clique na página, o navegador pode manter o áudio suspenso (escuta automática):
+    // tenta retomar agora e, se não der, no primeiro clique ou tecla.
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {})
+      const retomar = () => {
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+        if (ctxBipe?.state === 'suspended') ctxBipe.resume().catch(() => {})
+      }
+      for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, retomar, { once: true, capture: true })
+    }
 
     const ws = new WebSocket(VOZ_URL.replace(/^http/, 'ws') + '/escuta')
     ws.binaryType = 'arraybuffer'
