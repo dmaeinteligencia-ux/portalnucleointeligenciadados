@@ -50,8 +50,9 @@ async function executar(texto, msg = {}) {
     return
   }
   clearTimeout(prazoComando)
-  // Pedido que não é um comando conhecido ("Sane, quais sistemas temos?"): o Gemini tenta entender
-  if (voz.gemini && (acao.tipo === 'desconhecido' || (acao.tipo === 'ativar' && msg.incompleto))) return perguntarIA()
+  // Pedido que não é um comando conhecido ("Sane, quais sistemas temos?"): o Gemini tenta entender.
+  // Se só "Sane" foi reconhecido mas a fala durou bem mais que a palavra, o resto também vai para o Gemini.
+  if (voz.gemini && (acao.tipo === 'desconhecido' || (acao.tipo === 'ativar' && (msg.incompleto || msg.voz_ms > 1500)))) return perguntarIA()
   if (acao.tipo === 'ativar') {
     voz.estado = 'comando'
     voz.resposta = ''
