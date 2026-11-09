@@ -7,7 +7,13 @@ import { reactive } from 'vue'
 import { supabase, modoDemo } from './supabase'
 
 export const VOZ_URL = (import.meta.env.VITE_VOZ_URL || 'https://172.22.1.200').replace(/\/$/, '')
-export const PALAVRA = 'núcleo'
+export const PALAVRA = 'sane'
+
+// Palavras que o modelo de voz (Vosk pequeno em português) não conhece: trocadas por outras de som
+// parecido que ele conhece. Quando um nome de aplicação não for reconhecido, acrescente aqui.
+const SINONIMOS = {
+  ouvidoria: ['ouvidor', 'reclamações'],
+}
 
 export const voz = reactive({
   disponivel: false, // serviço alcançável a partir deste computador
@@ -31,12 +37,13 @@ export function apelidos(apps) {
   const porApp = apps.map((app) => {
     const nome = (app.nome || '').toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').replace(/\s+/g, ' ').trim()
     const palavras = nome.split(' ').filter((p) => p.length > 3 && !SEM_PESO.has(p))
+    for (const p of [...palavras]) if (SINONIMOS[p]) palavras.push(...SINONIMOS[p])
     palavras.forEach((p) => (contagem[p] = (contagem[p] || 0) + 1))
     return { app, nome, palavras }
   })
   return porApp.map(({ app, nome, palavras }) => ({
     app,
-    nomes: [...new Set([nome, ...palavras.filter((p) => contagem[p] === 1)])].filter(Boolean),
+    nomes: [...new Set([nome, ...palavras.filter((p) => contagem[p] === 1)])].filter((n) => n && !SINONIMOS[n]),
   }))
 }
 

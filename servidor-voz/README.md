@@ -1,6 +1,6 @@
 # Serviço de voz do Portal do Núcleo
 
-Reconhece os comandos de voz do portal ("Núcleo, abrir Agenda de Lavagem") num servidor da rede interna.
+Reconhece os comandos de voz do portal ("Sane, abrir Agenda de Lavagem") num servidor da rede interna.
 
 - **Vosk** (modelo pequeno em português), limitado às frases de comando que o portal envia. Leve: ~300 MB de memória, sem GPU.
 - O áudio chega do navegador por WebSocket, é reconhecido em memória e descartado. Nada é gravado.
@@ -43,7 +43,13 @@ Se a TI tiver uma autoridade certificadora interna, troque `tls internal` no `Ca
 O botão de microfone fica no topo. Ele só acende quando o portal consegue falar com este serviço (rede do DMAE ou VPN).
 Na primeira vez, o Chrome/Edge pedem permissão para o microfone e, nas versões novas, para acessar a rede local.
 
-- Clique no microfone para ligar a escuta e diga **"Núcleo, abrir Agenda de Lavagem"**.
-- **Ctrl+Espaço** liga e aceita o próximo comando sem precisar dizer "Núcleo".
+- Clique no microfone para ligar a escuta e diga **"Sane, abrir Agenda de Lavagem"**.
+- **Ctrl+Espaço** liga e aceita o próximo comando sem precisar dizer "Sane".
 - Comandos: abrir/abre/mostrar/usar *aplicação* (opcional "em nova aba"), início, aplicações, administração, voltar, que horas são, parar de ouvir, sair do portal.
 - Endereço do serviço: `VITE_VOZ_URL` na Vercel (padrão `https://172.22.1.200`).
+
+## Vocabulário
+
+O modelo pequeno não conhece todas as palavras (por exemplo, "ouvidoria"). Palavras desconhecidas são ignoradas pelo
+reconhecedor. Para esses casos, `SINONIMOS` em `src/lib/voz.js` troca a palavra por outra parecida que o modelo conhece
+("ouvidoria" → "ouvidor"). A palavra de ativação é `PALAVRA` no mesmo arquivo.
