@@ -48,6 +48,23 @@ Na primeira vez, o Chrome/Edge pedem permissão para o microfone e, nas versões
 - Comandos: abrir/abre/mostrar/usar *aplicação* (opcional "em nova aba"), início, aplicações, administração, voltar, que horas são, parar de ouvir, sair do portal.
 - Endereço do serviço: `VITE_VOZ_URL` na Vercel (padrão `https://172.22.1.200`).
 
+## Inteligência artificial (Gemini)
+
+Opcional. Quando o pedido depois de "Sane" não é um comando conhecido ("Sane, abre o sistema da frota",
+"Sane, quais sistemas temos?"), o portal pede ao serviço que mande **só aquele trecho de áudio** (até 15 s, em memória)
+ao Gemini, junto com a lista de aplicações. O Gemini devolve a ação (abrir, ir, voltar…) ou uma resposta curta, que o
+portal fala. Fora isso, nenhum áudio sai do servidor. Limite de 60 pedidos por sessão.
+
+Para ligar, crie a chave em https://aistudio.google.com/apikey e grave no servidor sem mostrar na tela:
+
+```bash
+read -s -p 'Chave do Gemini: ' K && echo && echo GEMINI_API_KEY=$K >> /opt/portal-nucleo/servidor-voz/.env
+docker compose up -d voz
+curl -sk https://localhost/saude   # deve mostrar "gemini": true
+```
+
+No plano gratuito, o Google pode usar os dados enviados para melhorar os produtos dele.
+
 ## Vocabulário
 
 O modelo pequeno não conhece todas as palavras (por exemplo, "ouvidoria"). Palavras desconhecidas são ignoradas pelo

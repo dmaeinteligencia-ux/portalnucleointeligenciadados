@@ -2,7 +2,9 @@
 //
 // O microfone é capturado no navegador (PCM 16 kHz) e enviado por WebSocket ao serviço de voz
 // na rede interna (servidor-voz/), que reconhece só as frases de comando do portal e devolve o texto.
-// Na escuta contínua, o comando precisa começar pela palavra de ativação "Núcleo".
+// Na escuta contínua, o comando precisa começar pela palavra de ativação "Sane".
+// Quando o pedido não é um comando conhecido e o serviço tem o Gemini configurado, o portal pede ao
+// serviço que mande aquele trecho de áudio ao Gemini, que devolve a ação ou uma resposta falada.
 import { reactive } from 'vue'
 import { supabase, modoDemo } from './supabase'
 
@@ -34,6 +36,7 @@ export const voz = reactive({
   ultimo: '', // último texto reconhecido
   resposta: '', // o que o portal respondeu
   erro: '',
+  gemini: false, // o serviço tem a inteligência artificial (Gemini) configurada
 })
 
 const suportado = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && !!window.AudioWorkletNode && !!window.WebSocket
@@ -138,6 +141,7 @@ export async function verificarServico() {
     const r = await fetch(`${VOZ_URL}/saude`, { signal: controle.signal, cache: 'no-store' })
     clearTimeout(prazo)
     voz.disponivel = r.ok
+    voz.gemini = r.ok && !!(await r.json().catch(() => ({}))).gemini
   } catch {
     voz.disponivel = false
   }
@@ -161,11 +165,11 @@ class Captura extends AudioWorkletProcessor {
 }
 registerProcessor('captura-nucleo', Captura)`
 
-let sessao = null // { ws, ctx, stream, no, aoTexto, frases }
+let sessao = null // { ws, ctx, stream, no, aoTexto, aoAcao, frases }
 let pausado = false
 let tentativas = 0
 
-export async function ligar({ frases, aoTexto }) {
+export async function ligar({ frases, aoTexto, aoAcao }) {
   if (sessao) return
   voz.erro = ''
   voz.estado = 'conectando'
@@ -190,7 +194,7 @@ export async function ligar({ frases, aoTexto }) {
 
     const ws = new WebSocket(VOZ_URL.replace(/^http/, 'ws') + '/escuta')
     ws.binaryType = 'arraybuffer'
-    sessao = { ws, ctx, stream, no, aoTexto, frases }
+    sessao = { ws, ctx, stream, no, aoTexto, aoAcao, frases }
 
     ws.onopen = () => ws.send(JSON.stringify({ token, frases }))
     ws.onmessage = (ev) => {
@@ -202,8 +206,10 @@ export async function ligar({ frases, aoTexto }) {
         voz.parcial = msg.texto
       } else if (msg.tipo === 'final') {
         voz.parcial = ''
-        voz.ultimo = msg.texto
-        aoTexto(msg.texto)
+        if (msg.texto) voz.ultimo = msg.texto
+        aoTexto(msg.texto, msg)
+      } else if (msg.tipo === 'acao') {
+        aoAcao?.(msg)
       } else if (msg.tipo === 'erro') {
         voz.erro = msg.mensagem
       }
@@ -218,7 +224,7 @@ export async function ligar({ frases, aoTexto }) {
       } else if (tentativas < 3) {
         tentativas++
         voz.estado = 'conectando'
-        setTimeout(() => ligar({ frases, aoTexto }), 2000 * tentativas)
+        setTimeout(() => ligar({ frases, aoTexto, aoAcao }), 2000 * tentativas)
       } else {
         voz.estado = 'erro'
         voz.erro = 'Sem conexão com o serviço de voz.'
@@ -238,6 +244,14 @@ export function atualizarFrases(frases) {
   if (!sessao) return
   sessao.frases = frases
   if (sessao.ws.readyState === WebSocket.OPEN) sessao.ws.send(JSON.stringify({ tipo: 'frases', frases }))
+}
+
+// Pede ao serviço que mande o último trecho falado ao Gemini; a resposta chega em aoAcao.
+export function entender(apps) {
+  if (!sessao || sessao.ws.readyState !== WebSocket.OPEN) return false
+  const lista = apps.map(({ slug, nome, area, descricao }) => ({ slug, nome, area, descricao }))
+  sessao.ws.send(JSON.stringify({ tipo: 'entender', apps: lista }))
+  return true
 }
 
 // Enquanto o portal fala, o áudio não é enviado (para ele não ouvir a própria voz).
