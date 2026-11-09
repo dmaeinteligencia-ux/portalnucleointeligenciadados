@@ -128,6 +128,25 @@ export function falar(texto) {
   })
 }
 
+// Bipe curto de "pode falar". Não pausa o microfone (a fala "Sim?" cortava o começo do pedido).
+let ctxBipe = null
+export function bipe() {
+  try {
+    ctxBipe = ctxBipe || new AudioContext()
+    const o = ctxBipe.createOscillator()
+    const g = ctxBipe.createGain()
+    const t = ctxBipe.currentTime
+    o.frequency.setValueAtTime(880, t)
+    o.frequency.setValueAtTime(1320, t + 0.07)
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16)
+    o.connect(g).connect(ctxBipe.destination)
+    o.start(t)
+    o.stop(t + 0.17)
+  } catch { /* sem áudio: segue só com o aviso visual */ }
+}
+
 // ---------- Serviço ----------
 export async function verificarServico() {
   if (modoDemo || !suportado) {
