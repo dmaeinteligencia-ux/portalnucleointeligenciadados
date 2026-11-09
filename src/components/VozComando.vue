@@ -33,7 +33,12 @@ async function carregarApps() {
 async function executar(texto) {
   voz.resposta = ''
   const acao = interpretar(texto, apps.value, { exigirPalavra: !direto.value && voz.estado !== 'comando' })
-  if (!acao) return
+  if (!acao) {
+    // Comando válido dito sem a palavra de ativação: avisa em vez de ficar calado
+    const semPalavra = interpretar(texto, apps.value, { exigirPalavra: false })
+    if (semPalavra && ['abrir', 'ir'].includes(semPalavra.tipo)) return responder(`Diga ${PALAVRA} antes do comando.`)
+    return
+  }
   clearTimeout(prazoComando)
   if (acao.tipo === 'ativar') {
     voz.estado = 'comando'

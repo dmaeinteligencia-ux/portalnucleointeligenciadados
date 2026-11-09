@@ -148,13 +148,13 @@ async def escuta(ws: WebSocket):
             recebido += len(dados)
             final = await asyncio.to_thread(reconhecedor.AcceptWaveform, dados)
             if final:
-                texto = json.loads(reconhecedor.Result()).get("text", "").strip()
+                texto = " ".join(p for p in json.loads(reconhecedor.Result()).get("text", "").split() if p != "[unk]")
                 ultimo_parcial = ""
                 log.info("ouvido: %r", texto)
-                if texto and texto != "[unk]":
+                if texto:
                     await ws.send_json({"tipo": "final", "texto": texto})
             else:
-                parcial = json.loads(reconhecedor.PartialResult()).get("partial", "").strip()
+                parcial = " ".join(p for p in json.loads(reconhecedor.PartialResult()).get("partial", "").split() if p != "[unk]")
                 if parcial and parcial != ultimo_parcial:
                     ultimo_parcial = parcial
                     await ws.send_json({"tipo": "parcial", "texto": parcial})

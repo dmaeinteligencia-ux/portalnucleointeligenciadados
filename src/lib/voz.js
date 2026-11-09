@@ -84,11 +84,14 @@ export function montarFrases(apps) {
 
 // Transforma o texto reconhecido numa ação.
 export function interpretar(texto, apps, { exigirPalavra = true } = {}) {
-  let t = normalizar(texto)
+  // O reconhecedor marca ruído e palavras fora da lista como [unk]; o comando vale a partir da palavra de ativação.
+  let t = normalizar((texto || '').replace(/\[unk\]/g, ' '))
   const palavra = normalizar(PALAVRA)
-  const temPalavra = t === palavra || t.startsWith(palavra + ' ')
+  const palavras = t.split(' ')
+  const posicao = palavras.lastIndexOf(palavra)
+  const temPalavra = posicao !== -1
   if (exigirPalavra && !temPalavra) return null
-  if (temPalavra) t = t.slice(palavra.length).trim()
+  if (temPalavra) t = palavras.slice(posicao + 1).join(' ')
   if (!t) return { tipo: 'ativar' }
 
   for (const n of NAVEGACAO) if (n.frases.some((f) => normalizar(f) === t)) return n.acao
