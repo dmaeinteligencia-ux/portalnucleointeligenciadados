@@ -58,6 +58,7 @@ export const voz = reactive({
   gemini: false, // o serviço tem a inteligência artificial (Gemini) configurada
   automatica: lerAutomatica(), // liga a escuta sozinha ao abrir o portal
   nivel: 0, // volume da voz agora (0 a 1), para a animação
+  falaServidor: false, // o serviço gera a voz (Piper); senão, voz do navegador
 })
 
 const suportado = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && !!window.AudioWorkletNode && !!window.WebSocket
@@ -156,8 +157,42 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
   speechSynthesis.addEventListener?.('voiceschanged', escolherVoz)
 }
 
-export function falar(texto) {
-  if (!texto || !window.speechSynthesis) return Promise.resolve()
+// Voz gerada no serviço (Piper): pede pelo WebSocket já aberto e toca o áudio; se falhar, usa a do navegador.
+let falaPendente = null
+function pedirFalaServidor(texto) {
+  if (!voz.falaServidor || !sessao || sessao.ws.readyState !== WebSocket.OPEN) return Promise.resolve(null)
+  falaPendente?.(null)
+  return new Promise((resolver) => {
+    const prazo = setTimeout(() => { falaPendente = null; resolver(null) }, 8000)
+    falaPendente = (audio) => { clearTimeout(prazo); falaPendente = null; resolver(audio) }
+    sessao.ws.send(JSON.stringify({ tipo: 'falar', texto }))
+  })
+}
+async function tocar(audio) {
+  ctxBipe = ctxBipe || new AudioContext()
+  if (ctxBipe.state === 'suspended') await ctxBipe.resume().catch(() => {})
+  const buffer = await ctxBipe.decodeAudioData(audio)
+  return new Promise((resolver) => {
+    const fonte = ctxBipe.createBufferSource()
+    fonte.buffer = buffer
+    fonte.connect(ctxBipe.destination)
+    fonte.onended = () => resolver()
+    fonte.start()
+  })
+}
+
+export async function falar(texto) {
+  if (!texto) return
+  voz.resposta = texto
+  try {
+    const audio = await pedirFalaServidor(texto)
+    if (audio) return await tocar(audio)
+  } catch { /* cai para a voz do navegador */ }
+  return falarNavegador(texto)
+}
+
+function falarNavegador(texto) {
+  if (!window.speechSynthesis) return Promise.resolve()
   if (!vozEscolhida) escolherVoz()
   return new Promise((resolver) => {
     const fala = new SpeechSynthesisUtterance(texto)
@@ -168,7 +203,6 @@ export function falar(texto) {
     fala.rate = natural ? 1.05 : 0.95
     fala.pitch = natural ? 1 : 0.95
     fala.onend = fala.onerror = () => resolver()
-    voz.resposta = texto
     speechSynthesis.cancel()
     speechSynthesis.speak(fala)
   })
@@ -206,7 +240,9 @@ export async function verificarServico() {
     const r = await fetch(`${VOZ_URL}/saude`, { signal: controle.signal, cache: 'no-store' })
     clearTimeout(prazo)
     voz.disponivel = r.ok
-    voz.gemini = r.ok && !!(await r.json().catch(() => ({}))).gemini
+    const info = r.ok ? await r.json().catch(() => ({})) : {}
+    voz.gemini = !!info.gemini
+    voz.falaServidor = !!info.fala
   } catch {
     voz.disponivel = false
   }
@@ -272,7 +308,9 @@ export async function ligar({ frases, aoTexto, aoAcao }) {
 
     ws.onopen = () => ws.send(JSON.stringify({ token, frases }))
     ws.onmessage = (ev) => {
+      if (ev.data instanceof ArrayBuffer) return falaPendente?.(ev.data) // áudio da resposta (Piper)
       const msg = JSON.parse(ev.data)
+      if (msg.tipo === 'fala') return falaPendente?.(null)
       if (msg.tipo === 'pronto') {
         tentativas = 0
         voz.estado = 'ouvindo'

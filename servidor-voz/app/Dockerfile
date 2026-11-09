@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl unzip \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Voz falada (Piper, voz masculina pt-BR "faber")
+ARG FALA_URL=https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx
+RUN mkdir /fala && curl -fsSL "$FALA_URL" -o /fala/pt_BR-faber-medium.onnx \
+ && curl -fsSL "$FALA_URL.json" -o /fala/pt_BR-faber-medium.onnx.json
 COPY main.py .
 
 # Roda sem privilégios

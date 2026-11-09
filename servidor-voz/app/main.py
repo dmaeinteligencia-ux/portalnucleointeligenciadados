@@ -46,6 +46,28 @@ def volume(pcm: bytes) -> float:
     return math.sqrt(sum(a * a for a in amostras) / len(amostras)) if amostras else 0.0
 
 modelo = Model(MODELO)
+
+# Voz falada (Piper, roda aqui mesmo, sem internet). Opcional: sem o modelo, o portal usa a voz do navegador.
+VOZ_FALA = os.environ.get("VOZ_FALA_MODELO", "/fala/pt_BR-faber-medium.onnx")
+MAX_TEXTO_FALA = 500
+try:
+    from piper import PiperVoice
+
+    fala_modelo = PiperVoice.load(VOZ_FALA) if os.path.exists(VOZ_FALA) else None
+except Exception as e:  # noqa: BLE001
+    logging.getLogger("voz").warning("voz falada indisponível: %s", e)
+    fala_modelo = None
+fala_trava = asyncio.Lock()  # uma síntese por vez, para não disputar a CPU
+
+
+def sintetizar(texto: str) -> bytes:
+    saida = io.BytesIO()
+    with wave.open(saida, "wb") as w:
+        if hasattr(fala_modelo, "synthesize_wav"):
+            fala_modelo.synthesize_wav(texto, w)
+        else:
+            fala_modelo.synthesize(texto, w)
+    return saida.getvalue()
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 _tokens: dict[str, tuple[float, str]] = {}  # token -> (validade, e-mail)
 
@@ -79,7 +101,7 @@ async def cors(request: Request, chamar):
 
 @app.get("/saude")
 async def saude():
-    return {"ok": True, "servico": "voz-nucleo", "modelo": os.path.basename(MODELO.rstrip("/")), "gemini": bool(GEMINI_CHAVE)}
+    return {"ok": True, "servico": "voz-nucleo", "modelo": os.path.basename(MODELO.rstrip("/")), "gemini": bool(GEMINI_CHAVE), "fala": fala_modelo is not None}
 
 
 async def conferir_login(token: str) -> str | None:
@@ -215,6 +237,18 @@ async def escuta(ws: WebSocket):
                     nova = montar_gramatica(comando.get("frases"))
                     if nova:
                         reconhecedor = KaldiRecognizer(modelo, TAXA, nova)
+                elif comando.get("tipo") == "falar":
+                    texto_fala = str(comando.get("texto") or "")[:MAX_TEXTO_FALA].strip()
+                    if not fala_modelo or not texto_fala:
+                        await ws.send_json({"tipo": "fala", "ok": False})
+                    else:
+                        try:
+                            async with fala_trava:
+                                audio = await asyncio.to_thread(sintetizar, texto_fala)
+                            await ws.send_bytes(audio)
+                        except Exception as e:  # noqa: BLE001
+                            log.warning("síntese falhou: %s", e)
+                            await ws.send_json({"tipo": "fala", "ok": False})
                 elif comando.get("tipo") == "entender":
                     if not GEMINI_CHAVE:
                         await ws.send_json({"tipo": "acao", "acao": "nada", "fala": "A inteligência artificial ainda não está configurada."})

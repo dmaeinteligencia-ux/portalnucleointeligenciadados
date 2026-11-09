@@ -6,7 +6,7 @@ services:
     build: ./app
     restart: unless-stopped
     env_file: .env
-    mem_limit: 700m
+    mem_limit: 1000m
     cpus: 2
     expose:
       - "8000"
