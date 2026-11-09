@@ -238,8 +238,8 @@ async def escuta(ws: WebSocket):
                     ultima_fala = bytes(fala)
                 fala = bytearray()
                 ultimo_parcial = ""
-                if texto:
-                    log.info("ouvido: %r", texto)
+                if texto or incompleto:
+                    log.info("ouvido: %r%s", texto, " (+ fala fora da lista)" if incompleto else "")
                 if texto or incompleto:
                     await ws.send_json({"tipo": "final", "texto": texto, "incompleto": incompleto})
             else:

@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, sair } from '../lib/auth'
 import { listarAplicacoes } from '../lib/dados'
-import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, PALAVRA } from '../lib/voz'
+import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, bipe, PALAVRA } from '../lib/voz'
 
 const router = useRouter()
 const apps = ref([])
@@ -54,8 +54,10 @@ async function executar(texto, msg = {}) {
   if (voz.gemini && (acao.tipo === 'desconhecido' || (acao.tipo === 'ativar' && msg.incompleto))) return perguntarIA()
   if (acao.tipo === 'ativar') {
     voz.estado = 'comando'
-    prazoComando = setTimeout(() => { if (voz.estado === 'comando') voz.estado = 'ouvindo' }, 6000)
-    return responder('Sim?')
+    voz.resposta = ''
+    // Bipe em vez de falar "Sim?": quem diz "Sane, …" sem pausa não perde o resto do pedido
+    prazoComando = setTimeout(() => { if (voz.estado === 'comando') voz.estado = 'ouvindo' }, 8000)
+    return bipe()
   }
   return executarAcao(acao)
 }
