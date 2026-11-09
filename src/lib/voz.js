@@ -134,14 +134,39 @@ export function interpretar(texto, apps, { exigirPalavra = true } = {}) {
 }
 
 // ---------- Fala ----------
+// Escolhe a melhor voz em português que o navegador tem. As vozes "Natural"/"Online" do Edge
+// (Francisca, Thalita, Antonio) são as mais naturais; depois as do Google no Chrome; por último as do Windows.
+let vozEscolhida = null
+function pontuar(v) {
+  const nome = `${v.name} ${v.voiceURI}`
+  let p = 0
+  if (/natural|online|neural/i.test(nome)) p += 10
+  if (/google/i.test(nome)) p += 6
+  if (/francisca|thalita/i.test(nome)) p += 2
+  if (v.lang?.toLowerCase().replace('_', '-') === 'pt-br') p += 3
+  if (/pt-pt|portugal/i.test(`${v.lang} ${nome}`)) p -= 5
+  return p
+}
+function escolherVoz() {
+  const vozes = (window.speechSynthesis?.getVoices() || []).filter((v) => v.lang?.toLowerCase().startsWith('pt'))
+  vozEscolhida = vozes.sort((a, b) => pontuar(b) - pontuar(a))[0] || null
+}
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  escolherVoz()
+  speechSynthesis.addEventListener?.('voiceschanged', escolherVoz)
+}
+
 export function falar(texto) {
   if (!texto || !window.speechSynthesis) return Promise.resolve()
+  if (!vozEscolhida) escolherVoz()
   return new Promise((resolver) => {
     const fala = new SpeechSynthesisUtterance(texto)
     fala.lang = 'pt-BR'
-    const vozPt = speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith('pt'))
-    if (vozPt) fala.voice = vozPt
-    fala.rate = 1.05
+    if (vozEscolhida) fala.voice = vozEscolhida
+    // vozes naturais já têm bom ritmo; as antigas soam melhor um pouco mais lentas e graves
+    const natural = vozEscolhida && pontuar(vozEscolhida) >= 10
+    fala.rate = natural ? 1.05 : 0.95
+    fala.pitch = natural ? 1 : 0.95
     fala.onend = fala.onerror = () => resolver()
     voz.resposta = texto
     speechSynthesis.cancel()
