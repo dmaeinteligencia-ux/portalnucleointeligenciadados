@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import NucleoOrb from './NucleoOrb.vue'
 import { auth, sair } from '../lib/auth'
 import { listarAplicacoes } from '../lib/dados'
 import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, bipe, definirAutomatica, microfonePermitido, PALAVRA } from '../lib/voz'
@@ -41,6 +42,24 @@ function mostrarBalao(ms = 5000) {
 }
 watch(() => voz.resposta, (r) => r && mostrarBalao(6000))
 watch(() => voz.estado, (e, antes) => { if (e === 'ouvindo' && antes === 'conectando') mostrarBalao(4000) })
+// Palco: a esfera do Núcleo em destaque enquanto o assistente ouve, pensa e responde
+const falandoAgora = ref(false)
+let prazoFala = null
+const palcoFechado = ref(false)
+const foco = computed(() => {
+  if (!ativo.value) return ''
+  if (pensando.value) return 'pensando'
+  if (falandoAgora.value) return 'falando'
+  if (esperando.value || parcialVisivel.value) return 'ouvindo'
+  return ''
+})
+watch(foco, (f) => { if (!f) palcoFechado.value = false })
+const ROTULOS = { ouvindo: 'OUVINDO', pensando: 'PENSANDO', falando: 'RESPONDENDO' }
+const textoPalco = computed(() => {
+  if (foco.value === 'falando') return voz.resposta
+  if (foco.value === 'ouvindo') return parcialVisivel.value.replace(new RegExp(`^.*?\\b${PALAVRA}\\b\\s*`, 'i'), '') || 'Pode falar…'
+  return ''
+})
 const balaoVisivel = computed(() => voz.estado === 'erro' || (ativo.value && (recente.value || pensando.value || esperando.value || !!parcialVisivel.value)))
 
 async function carregarApps() {
@@ -150,9 +169,13 @@ async function executarAcao(acao) {
 }
 
 async function responder(texto) {
+  clearTimeout(prazoFala)
+  falandoAgora.value = true
   pausar(true)
   await falar(texto)
   pausar(false)
+  // a esfera fica mais um instante com a resposta antes de sair
+  prazoFala = setTimeout(() => (falandoAgora.value = false), 1500)
 }
 
 async function alternar() {
@@ -215,5 +238,13 @@ watch(() => router.currentRoute.value.path, (p) => { if (ativo.value && (p === '
         <span class="voz-texto">{{ balao }}</span>
       </div>
     </Transition>
+    <Teleport to="body">
+      <Transition name="palco">
+        <div v-if="foco && !palcoFechado" class="voz-palco" :class="`palco-${foco}`" title="Clique para esconder" @click="palcoFechado = true">
+          <div class="palco-orb"><NucleoOrb :modo="foco" :nivel="voz.nivel" :subtitulo="ROTULOS[foco]" /></div>
+          <p class="palco-texto">{{ textoPalco }}</p>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>

@@ -57,6 +57,7 @@ export const voz = reactive({
   erro: '',
   gemini: false, // o serviço tem a inteligência artificial (Gemini) configurada
   automatica: lerAutomatica(), // liga a escuta sozinha ao abrir o portal
+  nivel: 0, // volume da voz agora (0 a 1), para a animação
 })
 
 const suportado = typeof window !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && !!window.AudioWorkletNode && !!window.WebSocket
@@ -280,6 +281,10 @@ export async function ligar({ frases, aoTexto, aoAcao }) {
     }
     no.port.onmessage = (ev) => {
       if (!pausado && ws.readyState === WebSocket.OPEN) ws.send(ev.data)
+      const a = new Int16Array(ev.data)
+      let soma = 0
+      for (let i = 0; i < a.length; i += 4) soma += a[i] * a[i]
+      voz.nivel = pausado ? 0 : Math.min(1, Math.sqrt(soma / (a.length / 4)) / 6000)
     }
   } catch (e) {
     desligar({ manterEstado: true })
