@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, sair } from '../lib/auth'
 import { listarAplicacoes } from '../lib/dados'
-import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, bipe, PALAVRA } from '../lib/voz'
+import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, bipe, definirAutomatica, microfonePermitido, PALAVRA } from '../lib/voz'
 
 const router = useRouter()
 const apps = ref([])
@@ -17,8 +17,8 @@ const ativo = computed(() => ['conectando', 'ouvindo', 'comando', 'falando'].inc
 const dica = computed(() => {
   if (!voz.disponivel) return 'Comandos de voz: disponível só na rede do DMAE'
   if (voz.estado === 'erro') return voz.erro
-  if (ativo.value) return `Ouvindo. Diga "${PALAVRA}" e o comando (Ctrl+Espaço fala direto). Clique para desligar.`
-  return 'Ligar comandos de voz (Ctrl+Espaço)'
+  if (ativo.value) return `Ouvindo. Diga "${PALAVRA}" e o comando (Ctrl+Espaço fala direto). Clique para desligar (a escuta não liga mais sozinha até você religar).`
+  return 'Ligar comandos de voz (Ctrl+Espaço). Fica ligado sozinho nas próximas vezes.'
 })
 const balao = computed(() => {
   if (voz.estado === 'erro') return voz.erro
@@ -122,6 +122,7 @@ async function executarAcao(acao) {
       return responder(`São ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`)
     case 'parar':
       await responder(acao.fala)
+      definirAutomatica(false)
       return desligar()
     case 'sair':
       await responder(acao.fala)
@@ -146,10 +147,23 @@ async function alternar() {
   }
   if (ativo.value) {
     pensando.value = false
+    definirAutomatica(false) // desligou no botão: não liga mais sozinho até religar
     return desligar()
   }
+  definirAutomatica(true)
+  await iniciar()
+}
+
+async function iniciar() {
   if (!apps.value.length) apps.value = await listarAplicacoes().catch(() => [])
   await ligar({ frases: montarFrases(apps.value), aoTexto: executar, aoAcao })
+}
+
+// Escuta automática ao abrir o portal (se o serviço responde e o microfone já foi permitido antes)
+async function ligarSozinho() {
+  if (!(await verificarServico()) || !voz.automatica || ativo.value) return
+  if (!(await microfonePermitido())) return
+  await iniciar()
 }
 
 async function atalho(e) {
@@ -163,7 +177,7 @@ async function atalho(e) {
 }
 
 onMounted(() => {
-  verificarServico()
+  ligarSozinho()
   window.addEventListener('keydown', atalho)
 })
 onBeforeUnmount(() => {

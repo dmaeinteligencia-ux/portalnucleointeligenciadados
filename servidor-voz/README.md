@@ -43,6 +43,7 @@ Se a TI tiver uma autoridade certificadora interna, troque `tls internal` no `Ca
 O botão de microfone fica no topo. Ele só acende quando o portal consegue falar com este serviço (rede do DMAE ou VPN).
 Na primeira vez, o Chrome/Edge pedem permissão para o microfone e, nas versões novas, para acessar a rede local.
 
+- A escuta liga sozinha ao abrir o portal, se o microfone já foi permitido antes neste navegador. Desligar pelo botão (ou "Sane, parar de ouvir") desliga também o modo automático até ligar de novo pelo botão. Se o navegador segurar o áudio até a primeira interação, ela começa no primeiro clique ou tecla.
 - Clique no microfone para ligar a escuta e diga **"Sane, abrir Agenda de Lavagem"**.
 - **Ctrl+Espaço** liga e aceita o próximo comando sem precisar dizer "Sane".
 - Comandos: abrir/abre/mostrar/usar *aplicação* (opcional "em nova aba"), início, aplicações, administração, voltar, que horas são, parar de ouvir, sair do portal.
