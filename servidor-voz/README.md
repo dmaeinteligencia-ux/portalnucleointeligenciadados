@@ -66,6 +66,13 @@ curl -sk https://localhost/saude   # deve mostrar "gemini": true
 
 No plano gratuito, o Google pode usar os dados enviados para melhorar os produtos dele.
 
+## Voz falada (Piper)
+
+As respostas são faladas com a voz "faber" (masculina, pt-BR) do [Piper](https://github.com/rhasspy/piper), gerada
+aqui mesmo no servidor, sem internet e sem custo (cerca de 2 s por frase, ~250 MB de memória). O portal pede a fala
+pelo mesmo WebSocket já autenticado. Se o modelo não estiver disponível ou a síntese falhar, o portal usa a voz do
+navegador. Para trocar de voz, mude `FALA_URL` no `app/Dockerfile` (vozes pt-BR: cadu, edresson, faber, jeff).
+
 ## Vocabulário
 
 O modelo pequeno não conhece todas as palavras (por exemplo, "ouvidoria"). Palavras desconhecidas são ignoradas pelo
