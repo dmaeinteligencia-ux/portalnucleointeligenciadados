@@ -415,12 +415,15 @@ select option { background: var(--fundo-2); }
   border: 1px solid var(--borda-forte); background: var(--painel-forte); box-shadow: var(--brilho);
   font-size: .9rem;
 }
-.voz-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voz-texto { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
 .voz-onda { display: flex; gap: 2px; align-items: center; height: 18px; }
 .voz-onda i { width: 3px; height: 100%; background: var(--ciano); border-radius: 2px; animation: onda 1s ease-in-out infinite; }
 .voz-onda i:nth-child(2) { animation-delay: .15s; } .voz-onda i:nth-child(3) { animation-delay: .3s; } .voz-onda i:nth-child(4) { animation-delay: .45s; }
 .voz-comando .voz-onda i, .voz-direto .voz-onda i { background: var(--verde); }
 .voz-erro .voz-onda { display: none; }
+.voz-pensando .voz-anel { border-color: var(--roxo) transparent; box-shadow: 0 0 16px var(--roxo); animation: giro 1.2s linear infinite; }
+.voz-pensando .voz-botao { color: var(--roxo); }
+.voz-pensando .voz-onda i { background: var(--roxo); }
 .balao-enter-active, .balao-leave-active { transition: opacity .2s, transform .2s; }
 .balao-enter-from, .balao-leave-to { opacity: 0; transform: translateY(-6px); }
 @media (prefers-reduced-motion: reduce) { .voz-anel, .voz-onda i { animation: none !important; } }

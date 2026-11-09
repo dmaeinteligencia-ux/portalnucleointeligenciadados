@@ -16,7 +16,8 @@ services:
     restart: unless-stopped
     depends_on:
       - voz
-    env_file: .env
+    environment:
+      VOZ_ENDERECO: ${VOZ_ENDERECO}
     ports:
       - "443:443"
     volumes:

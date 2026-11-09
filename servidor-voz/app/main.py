@@ -7,10 +7,13 @@ e devolve o texto. O áudio não é gravado em disco nem sai do servidor.
 Só atende quem está logado no portal: o token do Supabase é conferido antes do áudio.
 """
 import asyncio
+import base64
+import io
 import json
 import logging
 import os
 import time
+import wave
 
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -28,6 +31,10 @@ MODELO = os.environ.get("VOZ_MODELO", "/modelo")
 TAXA = 16000
 MAX_FRASES = 600
 MAX_SESSAO_S = 60 * 60 * 8
+GEMINI_CHAVE = os.environ.get("GEMINI_API_KEY", "").strip()
+GEMINI_MODELO = os.environ.get("GEMINI_MODELO", "gemini-2.5-flash")
+MAX_FALA_S = 15  # trecho de áudio guardado em memória para o Gemini (nunca gravado em disco)
+MAX_GEMINI_POR_SESSAO = 60
 
 modelo = Model(MODELO)
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -63,7 +70,7 @@ async def cors(request: Request, chamar):
 
 @app.get("/saude")
 async def saude():
-    return {"ok": True, "servico": "voz-nucleo", "modelo": os.path.basename(MODELO.rstrip("/"))}
+    return {"ok": True, "servico": "voz-nucleo", "modelo": os.path.basename(MODELO.rstrip("/")), "gemini": bool(GEMINI_CHAVE)}
 
 
 async def conferir_login(token: str) -> str | None:
@@ -104,6 +111,61 @@ def montar_gramatica(frases) -> str | None:
     return json.dumps(limpas + ["[unk]"], ensure_ascii=False)
 
 
+def para_wav(pcm: bytes) -> bytes:
+    saida = io.BytesIO()
+    with wave.open(saida, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TAXA)
+        w.writeframes(pcm)
+    return saida.getvalue()
+
+
+INSTRUCOES = """Você é o assistente de voz do Portal do Núcleo de Inteligência de Dados do DMAE (Uberlândia).
+O áudio é um pedido falado em português, que pode começar com a palavra de ativação "Sane".
+Aplicações do portal (JSON): {apps}
+Páginas: "/" (Central/início), "/aplicacoes" (catálogo), "/admin" (administração).
+Responda SOMENTE com um JSON neste formato:
+{{"transcricao": "o que a pessoa disse",
+ "acao": "abrir" | "ir" | "voltar" | "horas" | "parar" | "responder" | "nada",
+ "slug": "slug da aplicação, quando acao = abrir",
+ "nova_aba": false,
+ "para": "página, quando acao = ir",
+ "fala": "resposta curta e natural em português para ser falada (no máximo 2 frases)"}}
+Use "abrir" quando a pessoa quiser abrir/usar uma aplicação (mesmo descrita por outras palavras ou pela área).
+Use "responder" para perguntas sobre as aplicações do portal, respondendo só com base na lista acima.
+Use "nada" se o áudio não tiver um pedido. Não invente aplicações."""
+
+
+async def perguntar_gemini(pcm: bytes, apps) -> dict:
+    lista = [
+        {k: a.get(k) for k in ("slug", "nome", "area", "descricao") if isinstance(a, dict) and a.get(k)}
+        for a in (apps or [])[:50]
+    ]
+    corpo = {
+        "contents": [{
+            "role": "user",
+            "parts": [
+                {"text": INSTRUCOES.format(apps=json.dumps(lista, ensure_ascii=False))},
+                {"inline_data": {"mime_type": "audio/wav", "data": base64.b64encode(para_wav(pcm)).decode()}},
+            ],
+        }],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "temperature": 0.1,
+            "thinkingConfig": {"thinkingBudget": 0},  # resposta rápida, sem raciocínio longo
+        },
+    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODELO}:generateContent"
+    async with httpx.AsyncClient(timeout=20) as cliente:
+        r = await cliente.post(url, headers={"x-goog-api-key": GEMINI_CHAVE}, json=corpo)
+    if r.status_code != 200:
+        raise RuntimeError(f"Gemini respondeu {r.status_code}: {r.text[:200]}")
+    texto = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+    resposta = json.loads(texto)
+    return {k: resposta.get(k) for k in ("transcricao", "acao", "slug", "nova_aba", "para", "fala")}
+
+
 @app.websocket("/escuta")
 async def escuta(ws: WebSocket):
     if not origem_permitida(ws.headers.get("origin")):
@@ -130,6 +192,9 @@ async def escuta(ws: WebSocket):
     comeco = time.time()
     ultimo_parcial = ""
     recebido = 0
+    fala = bytearray()  # áudio da frase atual, só em memória
+    ultima_fala = b""
+    pedidos_gemini = 0
     try:
         while time.time() - comeco < MAX_SESSAO_S:
             mensagem = await ws.receive()
@@ -141,18 +206,42 @@ async def escuta(ws: WebSocket):
                     nova = montar_gramatica(comando.get("frases"))
                     if nova:
                         reconhecedor = KaldiRecognizer(modelo, TAXA, nova)
+                elif comando.get("tipo") == "entender":
+                    if not GEMINI_CHAVE:
+                        await ws.send_json({"tipo": "acao", "acao": "nada", "fala": "A inteligência artificial ainda não está configurada."})
+                    elif not ultima_fala or pedidos_gemini >= MAX_GEMINI_POR_SESSAO:
+                        await ws.send_json({"tipo": "acao", "acao": "nada", "fala": "Não entendi o comando."})
+                    else:
+                        pedidos_gemini += 1
+                        try:
+                            resposta = await perguntar_gemini(ultima_fala, comando.get("apps"))
+                            log.info("gemini: %r -> %s", resposta.get("transcricao"), resposta.get("acao"))
+                            await ws.send_json({"tipo": "acao", **resposta})
+                        except Exception as e:  # noqa: BLE001
+                            log.warning("gemini falhou: %s", e)
+                            await ws.send_json({"tipo": "acao", "acao": "nada", "fala": "Não consegui falar com a inteligência artificial agora."})
                 continue
             dados = mensagem.get("bytes")
             if not dados:
                 continue
             recebido += len(dados)
+            fala.extend(dados)
+            if len(fala) > MAX_FALA_S * TAXA * 2:
+                del fala[: len(fala) - MAX_FALA_S * TAXA * 2]
             final = await asyncio.to_thread(reconhecedor.AcceptWaveform, dados)
             if final:
-                texto = " ".join(p for p in json.loads(reconhecedor.Result()).get("text", "").split() if p != "[unk]")
+                bruto = json.loads(reconhecedor.Result()).get("text", "").split()
+                texto = " ".join(p for p in bruto if p != "[unk]")
+                # incompleto: havia fala fora da lista de comandos (o portal pode pedir ao Gemini para entender)
+                incompleto = "[unk]" in bruto
+                if texto or incompleto:
+                    ultima_fala = bytes(fala)
+                fala = bytearray()
                 ultimo_parcial = ""
-                log.info("ouvido: %r", texto)
                 if texto:
-                    await ws.send_json({"tipo": "final", "texto": texto})
+                    log.info("ouvido: %r", texto)
+                if texto or incompleto:
+                    await ws.send_json({"tipo": "final", "texto": texto, "incompleto": incompleto})
             else:
                 parcial = " ".join(p for p in json.loads(reconhecedor.PartialResult()).get("partial", "").split() if p != "[unk]")
                 if parcial and parcial != ultimo_parcial:

@@ -3,13 +3,15 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, sair } from '../lib/auth'
 import { listarAplicacoes } from '../lib/dados'
-import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, falar, pausar, PALAVRA } from '../lib/voz'
+import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, PALAVRA } from '../lib/voz'
 
 const router = useRouter()
 const apps = ref([])
 const direto = ref(false) // atalho Ctrl+Espaço: próximo comando sem a palavra de ativação
 let prazoDireto = null
 let prazoComando = null
+const pensando = ref(false) // esperando a resposta do Gemini
+let prazoPensando = null
 
 const ativo = computed(() => ['conectando', 'ouvindo', 'comando', 'falando'].includes(voz.estado))
 const dica = computed(() => {
@@ -20,6 +22,7 @@ const dica = computed(() => {
 })
 const balao = computed(() => {
   if (voz.estado === 'erro') return voz.erro
+  if (pensando.value) return 'Pensando…'
   if (voz.parcial) return voz.parcial
   if (voz.estado === 'comando' || direto.value) return 'Pode falar…'
   return voz.resposta || (voz.ultimo ? `Ouvi: “${voz.ultimo}”` : '')
@@ -30,9 +33,16 @@ async function carregarApps() {
   atualizarFrases(montarFrases(apps.value))
 }
 
-async function executar(texto) {
+async function executar(texto, msg = {}) {
+  if (pensando.value) return
+  const esperandoComando = direto.value || voz.estado === 'comando'
+  // Só ruído ou fala fora da lista: vale apenas logo depois de "Sane" (ou do atalho), e só com o Gemini
+  if (!texto) {
+    if (esperandoComando && msg.incompleto && voz.gemini) perguntarIA()
+    return
+  }
   voz.resposta = ''
-  const acao = interpretar(texto, apps.value, { exigirPalavra: !direto.value && voz.estado !== 'comando' })
+  const acao = interpretar(texto, apps.value, { exigirPalavra: !esperandoComando })
   if (!acao) {
     // Comando válido dito sem a palavra de ativação: avisa em vez de ficar calado
     const semPalavra = interpretar(texto, apps.value, { exigirPalavra: false })
@@ -40,11 +50,55 @@ async function executar(texto) {
     return
   }
   clearTimeout(prazoComando)
+  // Pedido que não é um comando conhecido ("Sane, quais sistemas temos?"): o Gemini tenta entender
+  if (voz.gemini && (acao.tipo === 'desconhecido' || (acao.tipo === 'ativar' && msg.incompleto))) return perguntarIA()
   if (acao.tipo === 'ativar') {
     voz.estado = 'comando'
     prazoComando = setTimeout(() => { if (voz.estado === 'comando') voz.estado = 'ouvindo' }, 6000)
     return responder('Sim?')
   }
+  return executarAcao(acao)
+}
+
+function perguntarIA() {
+  direto.value = false
+  voz.estado = 'ouvindo'
+  if (!entender(apps.value)) return responder('Não entendi o comando.')
+  pensando.value = true
+  clearTimeout(prazoPensando)
+  prazoPensando = setTimeout(() => {
+    if (pensando.value) {
+      pensando.value = false
+      responder('A inteligência artificial demorou para responder.')
+    }
+  }, 25000)
+}
+
+// Resposta do Gemini: { acao, slug, nova_aba, para, fala, transcricao }
+function aoAcao(r) {
+  if (!pensando.value) return
+  pensando.value = false
+  clearTimeout(prazoPensando)
+  if (r.transcricao) voz.ultimo = r.transcricao
+  switch (r.acao) {
+    case 'abrir': {
+      const app = apps.value.find((a) => a.slug === r.slug)
+      return app ? executarAcao({ tipo: 'abrir', app, novaAba: !!r.nova_aba }) : responder(r.fala || 'Não encontrei essa aplicação.')
+    }
+    case 'ir':
+      return ['/', '/aplicacoes', '/admin'].includes(r.para) ? executarAcao({ tipo: 'ir', para: r.para, fala: r.fala || 'Certo.' }) : responder(r.fala || 'Não entendi o comando.')
+    case 'voltar':
+      return executarAcao({ tipo: 'voltar', fala: r.fala || 'Voltando.' })
+    case 'horas':
+      return executarAcao({ tipo: 'horas' })
+    case 'parar':
+      return executarAcao({ tipo: 'parar', fala: 'Microfone desligado.' })
+    default:
+      return responder(r.fala || 'Não entendi o comando.')
+  }
+}
+
+async function executarAcao(acao) {
   direto.value = false
   voz.estado = 'ouvindo'
   switch (acao.tipo) {
@@ -87,9 +141,12 @@ async function alternar() {
     await verificarServico()
     if (!voz.disponivel) return
   }
-  if (ativo.value) return desligar()
+  if (ativo.value) {
+    pensando.value = false
+    return desligar()
+  }
   if (!apps.value.length) apps.value = await listarAplicacoes().catch(() => [])
-  await ligar({ frases: montarFrases(apps.value), aoTexto: executar })
+  await ligar({ frases: montarFrases(apps.value), aoTexto: executar, aoAcao })
 }
 
 async function atalho(e) {
@@ -115,7 +172,7 @@ watch(() => router.currentRoute.value.path, (p) => { if (ativo.value && (p === '
 </script>
 
 <template>
-  <div v-if="voz.verificado" class="voz" :class="[`voz-${voz.estado}`, { 'voz-off': !voz.disponivel, 'voz-direto': direto }]">
+  <div v-if="voz.verificado" class="voz" :class="[`voz-${voz.estado}`, { 'voz-off': !voz.disponivel, 'voz-direto': direto, 'voz-pensando': pensando }]">
     <button class="voz-botao" :title="dica" :aria-label="dica" :aria-pressed="ativo" @click="alternar">
       <span class="voz-anel" aria-hidden="true" />
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
