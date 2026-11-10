@@ -195,7 +195,7 @@ async function verificarPainel(app) {
     const mapa = await relatoriosPowerBI()
     const rel = mapa.get(ids.relatorio)
     if (!rel && !mapa.size) return { situacao: 'atencao', detalhe: 'o aplicativo "Portal Núcleo - Monitor Power BI" ainda não aparece em nenhum workspace do Power BI (a permissão pode levar alguns minutos)' }
-    if (!rel) return { situacao: 'atencao', detalhe: 'o monitor não enxerga este relatório: adicione "Portal Núcleo - Monitor Power BI" como Visualizador no workspace dele' }
+    if (!rel) return { situacao: 'atencao', detalhe: 'o monitor não enxerga este relatório: adicione "Portal Núcleo - Monitor Power BI" como Colaborador no workspace dele' }
     if (!rel.modelo) return { situacao: 'ok', detalhe: 'relatório sem modelo semântico próprio' }
     const modelo = await powerbi(`/groups/${rel.grupo}/datasets/${rel.modelo}`)
     if (modelo.isRefreshable === false) return { situacao: 'ok', detalhe: 'dados em conexão direta (sem atualização agendada)' }
