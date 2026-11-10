@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { obterAplicacao, registrarAcesso, rotuloStatus } from '../lib/dados'
 
 const route = useRoute()
+const router = useRouter()
 const app = ref(null)
 const carregado = ref(false)
 const carregando = ref(true)
@@ -40,6 +41,8 @@ function alternarTelaCheia() {
   else moldura.value?.requestFullscreen?.()
 }
 const recarregar = () => { carregando.value = true; const f = moldura.value.querySelector('iframe'); f.src = f.src }
+// Volta para a tela de onde a pessoa veio (início ou lista); sem histórico, vai para a lista
+const voltar = () => (window.history.state?.back ? router.back() : router.push('/aplicacoes'))
 const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
 </script>
 
@@ -47,11 +50,12 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
 <div class="embutida">
   <template v-if="app?.url">
     <div class="barra-embutida">
-      <RouterLink :to="`/aplicacoes/${app.slug}`" class="voltar-mini">‹ Voltar</RouterLink>
+      <button class="voltar-mini" @click="voltar">‹ Voltar</button>
       <span class="icone-app mini" aria-hidden="true">{{ app.nome.charAt(0) }}</span>
       <span class="embutida-nome"><strong>{{ app.nome }}</strong><small :class="`st st-${app.status}`"><i />{{ rotuloStatus[app.status] }} · conectado</small></span>
       <span class="embutida-endereco" :title="app.url">⛨ {{ app.url }}</span>
       <div class="embutida-acoes">
+        <RouterLink :to="`/aplicacoes/${app.slug}`" class="comando-mini" title="Detalhes da aplicação" aria-label="Detalhes da aplicação">ⓘ</RouterLink>
         <button class="comando-mini" title="Recarregar" @click="recarregar">⟳</button>
         <button class="comando-mini" :title="telaCheia ? 'Sair da tela cheia' : 'Tela cheia'" @click="alternarTelaCheia">{{ telaCheia ? '⤡' : '⤢' }}</button>
         <button class="botao secundario" @click="novaAba">Abrir em nova aba ↗</button>

@@ -5,7 +5,7 @@ defineProps({ app: Object, indice: { type: Number, default: 0 } })
 </script>
 
 <template>
-  <RouterLink :to="`/aplicacoes/${app.slug}`" class="cartao-app" :style="{ animationDelay: `${150 + indice * 90}ms` }">
+  <RouterLink :to="app.url ? `/aplicacoes/${app.slug}/usar` : `/aplicacoes/${app.slug}`" class="cartao-app" :style="{ animationDelay: `${150 + indice * 90}ms` }">
     <span class="icone-app" aria-hidden="true">{{ app.nome.charAt(0) }}</span>
     <span class="cartao-app-texto">
       <strong>{{ app.nome }}</strong>
