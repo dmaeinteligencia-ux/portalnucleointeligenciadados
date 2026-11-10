@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { auth, sair } from './lib/auth'
 import { modoDemo } from './lib/supabase'
 import Relogio from './components/Relogio.vue'
@@ -8,6 +8,9 @@ import VozComando from './components/VozComando.vue'
 import { saude, carregarSaude } from './lib/saude'
 
 const router = useRouter()
+const route = useRoute()
+// Aplicações e Painéis usam a mesma tela; o menu marca um ou outro pelo filtro de tipo
+const emPaineis = computed(() => route.path === '/aplicacoes' && route.query.tipo === 'painel')
 const busca = ref('')
 const buscar = () => router.push({ path: '/aplicacoes', query: busca.value ? { q: busca.value } : {} })
 const fazerSair = async () => { await sair(); router.push('/entrar') }
@@ -32,7 +35,8 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
       </RouterLink>
       <nav class="menu">
         <RouterLink to="/" class="item"><span class="ic">◈</span>Central</RouterLink>
-        <RouterLink to="/aplicacoes" class="item"><span class="ic">▦</span>Aplicações</RouterLink>
+        <RouterLink to="/aplicacoes" class="item" :class="{ desmarcado: emPaineis }"><span class="ic">▦</span>Aplicações</RouterLink>
+        <RouterLink :to="{ path: '/aplicacoes', query: { tipo: 'painel' } }" class="item" :class="{ desmarcado: !emPaineis }"><span class="ic">◧</span>Painéis</RouterLink>
         <RouterLink v-if="auth.usuario.papel === 'admin'" to="/saude" class="item"><span class="ic">♥</span>Saúde</RouterLink>
         <RouterLink v-if="auth.usuario.papel === 'admin'" to="/admin" class="item"><span class="ic">⚙</span>Administração</RouterLink>
       </nav>

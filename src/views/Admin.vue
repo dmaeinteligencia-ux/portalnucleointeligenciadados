@@ -2,7 +2,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import {
   listarAplicacoes, salvarAplicacao, listarAutorizados, autorizar, removerAutorizado,
-  listarAvisos, salvarAviso, listarAcessos, rotuloStatus,
+  listarAvisos, salvarAviso, listarAcessos, rotuloStatus, rotuloTipo, rotuloPlataforma,
+  normalizarLinkPainel, linkPublicoPowerBI,
 } from '../lib/dados'
 import { auth } from '../lib/auth'
 
@@ -12,7 +13,7 @@ const pessoas = ref([])
 const avisos = ref([])
 const acessos = ref([])
 
-const appVazia = () => ({ nome: '', slug: '', descricao: '', area: '', status: 'producao', url: '', responsavel: '', ativo: true, restrita: false, ordem: 100, supabase_url: '', supabase_chave: '', supabase_tabela: '' })
+const appVazia = () => ({ tipo: 'sistema', plataforma: 'powerbi', nome: '', slug: '', descricao: '', area: '', status: 'producao', url: '', responsavel: '', ativo: true, restrita: false, ordem: 100, supabase_url: '', supabase_chave: '', supabase_tabela: '' })
 const editandoApp = ref(null)
 const novaPessoa = reactive({ email: '', nome: '', papel: 'usuario' })
 const novoAviso = reactive({ titulo: '', texto: '', ativo: true })
@@ -38,6 +39,12 @@ function chaveSecreta(chave) {
 async function gravarApp() {
   const app = { ...editandoApp.value }
   if (!app.slug) app.slug = gerarSlug(app.nome)
+  if (app.tipo === 'painel') {
+    app.url = normalizarLinkPainel(app.url)
+    if (!app.plataforma) app.plataforma = 'powerbi'
+    if (app.url && !/^https:\/\//.test(app.url)) return avisar('O link do painel deve começar com https://')
+    if (linkPublicoPowerBI(app.url) && !confirm('Este link é do "Publicar na web": qualquer pessoa com ele vê os dados, sem login. Salvar mesmo assim?')) return
+  } else app.plataforma = null
   for (const c of ['supabase_url', 'supabase_chave', 'supabase_tabela']) app[c] = (app[c] || '').trim().replace(/\/$/, '') || null
   if (chaveSecreta(app.supabase_chave)) {
     return avisar('Essa é a chave secreta do Supabase. Use a chave publishable (anon).')
@@ -86,18 +93,30 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
     <form v-if="editandoApp" class="hud-painel formulario" @submit.prevent="gravarApp">
       <h2>{{ editandoApp.id ? 'Editar aplicação' : 'Nova aplicação' }}</h2>
       <div class="campos">
+        <label>Tipo
+          <select v-model="editandoApp.tipo"><option v-for="(r, v) in rotuloTipo" :key="v" :value="v">{{ r }}</option></select>
+        </label>
+        <label v-if="editandoApp.tipo === 'painel'">Ferramenta
+          <select v-model="editandoApp.plataforma"><option v-for="(r, v) in rotuloPlataforma" :key="v" :value="v">{{ r }}</option></select>
+        </label>
         <label>Nome<input v-model="editandoApp.nome" required /></label>
         <label>Área<input v-model="editandoApp.area" placeholder="Atendimento, Operação…" /></label>
         <label>Status
           <select v-model="editandoApp.status"><option v-for="(r, v) in rotuloStatus" :key="v" :value="v">{{ r }}</option></select>
         </label>
-        <label>Endereço (URL)<input v-model="editandoApp.url" type="url" placeholder="https://" /></label>
+        <label v-if="editandoApp.tipo === 'painel'" class="largo">Link de inserção do painel
+          <input v-model="editandoApp.url" placeholder="Power BI: Arquivo › Inserir relatório › Site ou portal (cole o link ou o código &lt;iframe&gt;)" />
+          <small v-if="linkPublicoPowerBI(editandoApp.url)" class="perigo">Link do "Publicar na web": fica aberto para qualquer pessoa com o link.</small>
+        </label>
+        <label v-else>Endereço (URL)<input v-model="editandoApp.url" type="url" placeholder="https://" /></label>
         <label>Responsável<input v-model="editandoApp.responsavel" /></label>
         <label>Ordem<input v-model.number="editandoApp.ordem" type="number" /></label>
         <label class="largo">Descrição<textarea v-model="editandoApp.descricao" rows="3" /></label>
+        <template v-if="editandoApp.tipo !== 'painel'">
         <label>Supabase da aplicação (monitoramento)<input v-model="editandoApp.supabase_url" type="url" placeholder="https://xxxx.supabase.co" /></label>
         <label>Chave publishable do Supabase<input v-model="editandoApp.supabase_chave" placeholder="sb_publishable_… (nunca a secreta)" /></label>
         <label>Tabela para consulta (opcional)<input v-model="editandoApp.supabase_tabela" placeholder="se o banco não tem a função ping()" /></label>
+        </template>
         <label class="caixa"><input v-model="editandoApp.ativo" type="checkbox" /> Visível no portal</label>
         <label class="caixa"><input v-model="editandoApp.restrita" type="checkbox" /> Restrita a pessoas específicas</label>
       </div>
@@ -107,10 +126,11 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
       </div>
     </form>
     <table class="tabela">
-      <thead><tr><th>Aplicação</th><th>Área</th><th>Status</th><th>Visível</th><th></th></tr></thead>
+      <thead><tr><th>Aplicação</th><th>Tipo</th><th>Área</th><th>Status</th><th>Visível</th><th></th></tr></thead>
       <tbody>
         <tr v-for="app in apps" :key="app.id">
-          <td><strong>{{ app.nome }}</strong><br /><small class="suave">{{ app.url || 'sem link' }}</small></td>
+          <td><strong>{{ app.nome }}</strong><br /><small class="suave quebra">{{ app.url || 'sem link' }}</small></td>
+          <td>{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || ''}` : 'Sistema' }}</td>
           <td>{{ app.area }}</td>
           <td><span class="etiqueta" :class="`status-${app.status}`">{{ rotuloStatus[app.status] }}</span></td>
           <td>{{ app.ativo ? 'Sim' : 'Não' }}</td>

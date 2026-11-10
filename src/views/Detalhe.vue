@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HudPanel from '../components/HudPanel.vue'
 import Onda from '../components/Onda.vue'
-import { obterAplicacao, registrarAcesso, rotuloStatus } from '../lib/dados'
+import { obterAplicacao, registrarAcesso, rotuloStatus, rotuloPlataforma } from '../lib/dados'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,7 +28,7 @@ async function abrir() {
   <RouterLink to="/aplicacoes" class="voltar">‹ Aplicações</RouterLink>
   <HudPanel v-if="app" class="detalhe">
     <div class="detalhe-topo">
-      <div class="icone-app grande" aria-hidden="true">{{ app.nome.charAt(0) }}</div>
+      <div class="icone-app grande" aria-hidden="true">{{ app.tipo === 'painel' ? '◧' : app.nome.charAt(0) }}</div>
       <div>
         <h1 class="titulo-tela">{{ app.nome }}</h1>
         <div class="etiquetas">
@@ -45,8 +45,12 @@ async function abrir() {
     <p>{{ app.descricao }}</p>
     <dl class="ficha">
       <dt>Responsável</dt><dd>{{ app.responsavel || 'A definir' }}</dd>
-      <dt>Endereço</dt><dd>{{ app.url || 'A definir' }}</dd>
-      <dt>Como pedir acesso</dt><dd>Fale com o Núcleo de Inteligência de Dados. A aplicação tem login próprio.</dd>
+      <dt>Endereço</dt><dd class="quebra">{{ app.url || 'A definir' }}</dd>
+      <template v-if="app.tipo === 'painel'">
+        <dt>Tipo</dt><dd>Painel {{ rotuloPlataforma[app.plataforma] || 'de BI' }}</dd>
+        <dt>Como pedir acesso</dt><dd>O acesso aos dados é controlado no {{ rotuloPlataforma[app.plataforma] || 'BI' }}. Peça ao responsável para compartilhar o painel com o seu e-mail institucional.</dd>
+      </template>
+      <template v-else><dt>Como pedir acesso</dt><dd>Fale com o Núcleo de Inteligência de Dados. A aplicação tem login próprio.</dd></template>
     </dl>
   </HudPanel>
   <p v-else-if="carregado" class="suave">Aplicação não encontrada ou sem acesso liberado.</p>

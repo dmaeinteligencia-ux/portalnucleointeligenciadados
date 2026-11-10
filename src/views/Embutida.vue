@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { obterAplicacao, registrarAcesso, rotuloStatus } from '../lib/dados'
+import { obterAplicacao, registrarAcesso, rotuloStatus, rotuloPlataforma } from '../lib/dados'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,6 +11,7 @@ const carregando = ref(true)
 const moldura = ref(null)
 const telaCheia = ref(false)
 const bloqueado = ref(false)
+const painel = computed(() => app.value?.tipo === 'painel')
 
 // A aplicação embutida avisa se o navegador deixa o login funcionar dentro do quadro
 function aoReceberMensagem(evento) {
@@ -51,8 +52,8 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
   <template v-if="app?.url">
     <div class="barra-embutida">
       <button class="voltar-mini" @click="voltar">‹ Voltar</button>
-      <span class="icone-app mini" aria-hidden="true">{{ app.nome.charAt(0) }}</span>
-      <span class="embutida-nome"><strong>{{ app.nome }}</strong><small :class="`st st-${app.status}`"><i />{{ rotuloStatus[app.status] }} · conectado</small></span>
+      <span class="icone-app mini" aria-hidden="true">{{ painel ? '◧' : app.nome.charAt(0) }}</span>
+      <span class="embutida-nome"><strong>{{ app.nome }}</strong><small :class="`st st-${app.status}`"><i />{{ painel ? `Painel ${rotuloPlataforma[app.plataforma] || 'de BI'}` : rotuloStatus[app.status] }} · conectado</small></span>
       <span class="embutida-endereco" :title="app.url">⛨ {{ app.url }}</span>
       <div class="embutida-acoes">
         <RouterLink :to="`/aplicacoes/${app.slug}`" class="comando-mini" title="Detalhes da aplicação" aria-label="Detalhes da aplicação">ⓘ</RouterLink>
@@ -61,7 +62,7 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
         <button class="botao secundario" @click="novaAba">Abrir em nova aba ↗</button>
       </div>
     </div>
-    <div ref="moldura" class="moldura-app">
+    <div ref="moldura" class="moldura-app" :class="{ 'moldura-painel': painel }">
       <span class="canto c1" /><span class="canto c2" /><span class="canto c3" /><span class="canto c4" />
       <div v-if="carregando" class="carregando-app"><span class="anel-carga" /><small>Conectando à {{ app.nome }}…</small></div>
       <div v-if="bloqueado" class="bloqueio-app" role="alert">
@@ -71,7 +72,8 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
       </div>
       <iframe :src="app.url" :title="app.nome" allow="clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin" @load="carregando = false" />
     </div>
-    <p class="dica-embutida">Se a tela ficar em branco ou o login não completar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
+    <p v-if="painel && app.plataforma === 'powerbi'" class="dica-embutida">Se o Power BI pedir, clique em <strong>Entrar</strong> e use sua conta Microsoft do DMAE. Você só vê os painéis que foram compartilhados com você no Power BI. Se não carregar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
+    <p v-else class="dica-embutida">Se a tela ficar em branco ou o login não completar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
   </template>
   <p v-else-if="carregado" class="suave">Aplicação não encontrada ou sem endereço cadastrado.</p>
 </div>

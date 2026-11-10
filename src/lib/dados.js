@@ -78,4 +78,16 @@ export async function removerAutorizado(email) {
   await ok(supabase.from('autorizados').delete().eq('email', email))
 }
 
+export const rotuloTipo = { sistema: 'Sistema', painel: 'Painel de BI' }
+export const rotuloPlataforma = { powerbi: 'Power BI', looker: 'Looker Studio', metabase: 'Metabase', outro: 'Outra' }
+
+// Link de inserção do Power BI: aceita o endereço ou o código <iframe> inteiro copiado do Power BI.
+export function normalizarLinkPainel(texto) {
+  const t = (texto || '').trim()
+  const src = t.match(/src\s*=\s*["']([^"']+)["']/i)
+  return (src ? src[1] : t).replace(/&amp;/g, '&')
+}
+// "Publicar na web" gera app.powerbi.com/view?r=..., que qualquer pessoa com o link consegue abrir.
+export const linkPublicoPowerBI = url => /powerbi\.com\/view\?r=/i.test(url || '')
+
 export const rotuloStatus = { producao: 'Em produção', piloto: 'Piloto', desenvolvimento: 'Em desenvolvimento' }
