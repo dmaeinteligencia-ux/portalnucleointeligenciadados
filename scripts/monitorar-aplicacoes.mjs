@@ -192,7 +192,9 @@ async function verificarPainel(app) {
   const ids = idsPowerBI(app.url)
   if (!ids) return { situacao: 'atencao', detalhe: 'link do Power BI sem o ID do relatório' }
   try {
-    const rel = (await relatoriosPowerBI()).get(ids.relatorio)
+    const mapa = await relatoriosPowerBI()
+    const rel = mapa.get(ids.relatorio)
+    if (!rel && !mapa.size) return { situacao: 'atencao', detalhe: 'o aplicativo "Portal Núcleo - Monitor Power BI" ainda não aparece em nenhum workspace do Power BI (a permissão pode levar alguns minutos)' }
     if (!rel) return { situacao: 'atencao', detalhe: 'o monitor não enxerga este relatório: adicione "Portal Núcleo - Monitor Power BI" como Visualizador no workspace dele' }
     if (!rel.modelo) return { situacao: 'ok', detalhe: 'relatório sem modelo semântico próprio' }
     const modelo = await powerbi(`/groups/${rel.grupo}/datasets/${rel.modelo}`)
