@@ -331,7 +331,7 @@ select option { background: var(--fundo-2); }
   .painel-central { grid-template-columns: 1fr 1fr; grid-template-areas: "orb orb" "visao feed" "apps apps" "comandos monitor" "linha linha"; }
 }
 @media (max-width: 860px) {
-  .moldura { grid-template-columns: 1fr; }
+  .moldura { grid-template-columns: minmax(0, 1fr); }
   .lateral { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .75rem 1rem; border-right: 0; border-bottom: 1px solid var(--borda); }
   .menu { display: flex; overflow-x: auto; width: 100%; }
   .menu .item { white-space: nowrap; padding: .5rem .7rem; }
@@ -447,3 +447,40 @@ select option { background: var(--fundo-2); }
 .palco-enter-from, .palco-leave-to { opacity: 0; }
 @keyframes palco-surgir { from { transform: scale(.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .palco-enter-active .palco-orb { animation: none; } }
+
+/* Saúde das aplicações (monitoramento) */
+.luz-saude { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; font-weight: 600; }
+.luz-saude i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; flex: none; }
+.luz-ok { color: var(--verde); } .luz-atencao { color: var(--amarelo); } .luz-fora { color: var(--vermelho); } .luz-sem { color: var(--suave); }
+.luz-fora i, .luz-atencao i { animation: pulsar 1s infinite; }
+.luz-sem i { box-shadow: none; opacity: .5; }
+.cartao-luz { position: absolute; top: .7rem; right: .75rem; }
+.pilula-status.alerta b { color: var(--vermelho); }
+.pilula-status.alerta b i { background: var(--vermelho); box-shadow: 0 0 8px var(--vermelho); }
+.pilula-status.atencao b { color: var(--amarelo); }
+.pilula-status.atencao b i { background: var(--amarelo); box-shadow: 0 0 8px var(--amarelo); }
+
+.saude-resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.saude-resumo .numero strong { font-family: var(--fonte-hud); font-size: 1.8rem; display: block; }
+.saude-lista { display: grid; gap: .8rem; }
+.saude-item { display: grid; gap: .7rem; }
+.saude-topo { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.saude-topo h2 { font-size: 1.1rem; }
+.saude-topo .disp { margin-left: auto; font-family: var(--fonte-hud); font-size: .9rem; color: var(--ciano-claro); }
+.saude-dados { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .5rem; }
+.saude-dados div { padding: .5rem .65rem; border: 1px solid var(--borda); border-radius: 8px; background: rgba(56, 214, 255, 0.03); }
+.saude-dados small { display: block; color: var(--suave); font-size: .75rem; letter-spacing: .04em; }
+.saude-dados strong { font-variant-numeric: tabular-nums; }
+.saude-detalhe { margin: 0; color: var(--amarelo); font-size: .9rem; }
+.saude-detalhe.fora { color: var(--vermelho); }
+.saude-dias { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; }
+.saude-dias span { height: 26px; border-radius: 3px; background: rgba(125, 155, 187, 0.18); transform-origin: bottom; animation: crescer .5s both; }
+.saude-dias .d-ok { background: rgba(52, 245, 164, 0.55); box-shadow: 0 0 6px rgba(52, 245, 164, 0.35); }
+.saude-dias .d-atencao { background: rgba(255, 201, 77, 0.75); }
+.saude-dias .d-fora { background: rgba(255, 107, 125, 0.85); box-shadow: 0 0 6px rgba(255, 107, 125, 0.5); }
+.saude-eixo { display: flex; justify-content: space-between; font-size: .72rem; color: var(--suave); }
+@keyframes crescer { from { transform: scaleY(0); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .saude-dias span, .luz-saude i { animation: none !important; } }
+.aviso-erro { background: rgba(255, 107, 125, 0.08); border: 1px solid rgba(255, 107, 125, 0.4); color: var(--vermelho); border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
+.tag.atencao { color: var(--amarelo); border-color: rgba(255, 201, 77, 0.45); }
+.tag.fora { color: var(--vermelho); border-color: rgba(255, 107, 125, 0.5); }

@@ -1,6 +1,7 @@
 <script setup>
 import { rotuloStatus } from '../lib/dados'
 import Onda from './Onda.vue'
+import LuzSaude from './LuzSaude.vue'
 defineProps({ app: Object, indice: { type: Number, default: 0 } })
 </script>
 
@@ -13,5 +14,6 @@ defineProps({ app: Object, indice: { type: Number, default: 0 } })
       <span class="descricao">{{ app.descricao }}</span>
     </span>
     <Onda :barras="16" />
+    <LuzSaude :slug="app.slug" class="cartao-luz" />
   </RouterLink>
 </template>

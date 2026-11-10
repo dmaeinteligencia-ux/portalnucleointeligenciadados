@@ -28,12 +28,21 @@ Cada modelo já vem com:
      "status": "producao",
      "url": "https://agenda-lavagem.vercel.app",
      "responsavel": "Equipe de Frota",
-     "portal": true
+     "portal": true,
+     "monitorar": {
+       "supabase_url": "https://xxxx.supabase.co",
+       "supabase_chave": "sb_publishable_...",
+       "tabela": ""
+     }
    }
    ```
    `status`: `producao`, `piloto` ou `desenvolvimento`. `"portal": false` deixa o sistema fora do portal.
-3. Copie `.env.example` para `.env` (ou cadastre na Vercel) com a URL e a chave **publishable** do Supabase do sistema.
-4. Publique na Vercel.
+   `monitorar` liga o monitoramento do banco: use a chave **publishable** (nunca a secreta). `tabela` é opcional,
+   só para banco sem a função `ping()`.
+3. No SQL Editor do Supabase do sistema, rode uma vez o `supabase/ping.sql`. O portal chama essa função 3 vezes por dia,
+   o que mostra se o banco está no ar e evita que o plano grátis pause o banco.
+4. Copie `.env.example` para `.env` (ou cadastre na Vercel) com a URL e a chave **publishable** do Supabase do sistema.
+5. Publique na Vercel.
 
 No dia seguinte às 7h (ou na hora, em Actions → *Cadastro automático de aplicações* → *Run workflow*, no repositório do portal),
 o sistema aparece no painel do portal **oculto**. Um admin confere e marca como ativo para liberar.
@@ -42,7 +51,7 @@ o sistema aparece no painel do portal **oculto**. Um admin confere e marca como 
 
 Basta adicionar ao projeto:
 
-1. O `nucleo.json` acima.
+1. O `nucleo.json` acima (com o bloco `monitorar`) e o `supabase/ping.sql` rodado no Supabase do sistema.
 2. No `index.html` (ou no `head` do `nuxt.config.ts`):
    ```html
    <script src="https://portalnucleointeligenciadados.vercel.app/embutido.js" defer></script>

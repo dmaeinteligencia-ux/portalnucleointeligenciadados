@@ -87,6 +87,7 @@ const NAVEGACAO = [
   { frases: ['início', 'ir para o início', 'central', 'ir para a central', 'tela inicial'], acao: { tipo: 'ir', para: '/', fala: 'Central.' } },
   { frases: ['aplicações', 'ir para aplicações', 'mostrar aplicações', 'catálogo'], acao: { tipo: 'ir', para: '/aplicacoes', fala: 'Aplicações.' } },
   { frases: ['administração', 'ir para administração', 'painel de administração'], acao: { tipo: 'ir', para: '/admin', fala: 'Administração.' } },
+  { frases: ['como estão os sistemas', 'status dos sistemas', 'saúde dos sistemas', 'os sistemas estão no ar'], acao: { tipo: 'saude' } },
   { frases: ['voltar', 'volta'], acao: { tipo: 'voltar', fala: 'Voltando.' } },
   { frases: ['que horas são', 'horas'], acao: { tipo: 'horas' } },
   { frases: ['parar de ouvir', 'desligar microfone', 'desligar'], acao: { tipo: 'parar', fala: 'Microfone desligado.' } },

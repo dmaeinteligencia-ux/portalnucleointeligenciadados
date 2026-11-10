@@ -9,6 +9,7 @@ export const router = createRouter({
     { path: '/aplicacoes', component: () => import('./views/Aplicacoes.vue') },
     { path: '/aplicacoes/:slug', component: () => import('./views/Detalhe.vue') },
     { path: '/aplicacoes/:slug/usar', component: () => import('./views/Embutida.vue') },
+    { path: '/saude', component: () => import('./views/Saude.vue'), meta: { admin: true } },
     { path: '/admin', component: () => import('./views/Admin.vue'), meta: { admin: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

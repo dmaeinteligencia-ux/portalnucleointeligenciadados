@@ -47,3 +47,23 @@ Secrets necessários no repositório do portal (Settings → Secrets and variabl
 | `NUCLEO_GH_TOKEN` | token do GitHub (fine-grained) com leitura de *Contents* e *Metadata* em todos os repositórios da conta |
 | `SUPABASE_URL` | `https://tfbqiytwwmbicjeyjrmm.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | chave de serviço do Supabase do portal. Só aqui, nunca no código nem em variável `VITE_` |
+
+## Monitoramento das aplicações
+
+`.github/workflows/monitorar-aplicacoes.yml` roda às 7h, 12h e 17h (ou pelo botão *Run workflow*) e, para o portal
+e cada aplicação cadastrada, confere:
+
+- **site**: se o endereço responde, com qual código e em quanto tempo;
+- **banco Supabase**: chama a função `ping()` do banco da aplicação (ou faz uma consulta leve na tabela indicada).
+  Além de mostrar se o banco está no ar, isso mantém o banco em uso e evita que o plano grátis pause depois de 7 dias parado;
+- **certificado HTTPS**: avisa quando faltam menos de 15 dias para vencer.
+
+O resultado fica na tabela `verificacoes` (90 dias de histórico) e aparece como luz verde, amarela ou vermelha nos cartões,
+na pílula "Status do sistema" e na tela **Saúde** (admins). Pelo assistente de voz: "Sane, como estão os sistemas?".
+Quando algo dá errado, o monitoramento abre uma issue com a etiqueta `monitoramento` (o GitHub avisa por e-mail quem acompanha
+o repositório) e fecha a issue sozinho quando volta ao normal.
+
+Para monitorar o banco de uma aplicação, preencha o bloco `monitorar` do `nucleo.json` (veja [modelos/README.md](modelos/README.md))
+ou os campos de Supabase em Administração → Aplicações, e rode uma vez `supabase/ping.sql` (está nos modelos) no SQL Editor
+do Supabase da aplicação. Usa os mesmos secrets `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do cadastro automático.
+O servidor interno (172.22.1.200) fica fora: o GitHub não alcança a rede do DMAE.

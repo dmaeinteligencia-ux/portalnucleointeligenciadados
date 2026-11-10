@@ -13,6 +13,8 @@ if (ficha && ficha.portal !== false) {
   if (!/^[a-z0-9-]+$/.test(ficha.slug || '')) problemas.push('"slug" no nucleo.json: só minúsculas, números e hífen')
   if (!['producao', 'piloto', 'desenvolvimento'].includes(ficha.status)) problemas.push('"status" no nucleo.json: producao, piloto ou desenvolvimento')
   if (ficha.url && !ficha.url.startsWith('https://')) problemas.push('"url" no nucleo.json deve começar com https://')
+  const chave = String(ficha.monitorar?.supabase_chave || '')
+  if (chave.startsWith('sb_secret_') || /service_role/.test(Buffer.from(chave.split('.')[1] || '', 'base64url').toString())) problemas.push('"monitorar.supabase_chave" no nucleo.json é a chave SECRETA; use a publishable')
 }
 
 // 2. Aviso para o portal (embutido.js)
