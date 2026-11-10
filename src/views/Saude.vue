@@ -83,7 +83,11 @@ const rotuloDia = { ok: 'tudo certo', atencao: 'atenção', fora: 'fora do ar' }
           <span class="disp" title="Verificações sem queda nos últimos 30 dias">{{ pct(a.disponibilidade) }} no ar · 30 dias</span>
         </div>
         <p v-if="a.atual?.detalhe" class="saude-detalhe" :class="a.atual.situacao">{{ a.atual.detalhe }}</p>
-        <div class="saude-dados">
+        <div v-if="a.tipo === 'painel'" class="saude-dados">
+          <div><small>TIPO</small><strong>Painel Power BI</strong></div>
+          <div><small>O QUE É VERIFICADO</small><strong>Atualização dos dados</strong></div>
+        </div>
+        <div v-else class="saude-dados">
           <div><small>SITE</small><strong>{{ a.atual?.site_status ? `${a.atual.site_status} · ${a.atual.site_ms} ms` : a.atual ? 'sem resposta' : '—' }}</strong></div>
           <div><small>TEMPO MÉDIO</small><strong>{{ a.mediaMs ? `${a.mediaMs} ms` : '—' }}</strong></div>
           <div><small>BANCO</small><strong>{{ a.atual ? rotuloBanco[a.atual.banco] || '—' : '—' }}</strong></div>
