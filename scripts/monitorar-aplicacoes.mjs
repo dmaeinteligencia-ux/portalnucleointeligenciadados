@@ -13,6 +13,11 @@
 //   GITHUB_TOKEN, GITHUB_REPOSITORY          automáticos no Actions (para as issues)
 //   PORTAL_URL (opcional)                    padrão: https://portalnucleointeligenciadados.vercel.app
 //   SIMULAR=1 (opcional)                     só mostra o resultado, sem gravar nem abrir issues
+//   PBI_TENANT_ID, PBI_CLIENT_ID, PBI_CLIENT_SECRET  aplicativo do Entra ID que lê a API do Power BI
+//   PBI_LIMITE_HORAS (opcional)              dados mais velhos que isso ficam em atenção (padrão 26)
+//
+// Painéis do Power BI não têm site nem banco próprios: para eles o que importa é se a atualização
+// dos dados (modelo semântico) rodou e quando. Sem as variáveis PBI_*, os painéis ficam de fora.
 
 import { appendFileSync } from 'node:fs'
 import tls from 'node:tls'
@@ -27,6 +32,9 @@ const ETIQUETA = 'monitoramento'
 const LENTO_MS = 8000
 const SSL_AVISO_DIAS = 15
 const GUARDAR_DIAS = 90
+const PBI = { tenant: process.env.PBI_TENANT_ID, cliente: process.env.PBI_CLIENT_ID, segredo: process.env.PBI_CLIENT_SECRET }
+const PBI_LIMITE_HORAS = Number(process.env.PBI_LIMITE_HORAS) || 26
+const PBI_API = 'https://api.powerbi.com/v1.0/myorg'
 
 if (!SB_URL || !SB_CHAVE) {
   console.error('Faltam SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.')
@@ -126,6 +134,94 @@ async function verificarBancoPortal() {
   }
 }
 
+// ---------- Painéis do Power BI ----------
+const ehPowerBI = (app) => /^https:\/\/([a-z0-9-]+\.)*powerbi\.com\//i.test(app.url || '')
+
+// IDs do relatório e do workspace a partir do link (de inserção ou normal)
+function idsPowerBI(url) {
+  try {
+    const u = new URL(url)
+    const m = u.pathname.match(/\/groups\/([^/]+)\/reports\/([0-9a-f-]{36})/i)
+    if (m) return { relatorio: m[2].toLowerCase(), grupo: m[1] === 'me' ? null : m[1].toLowerCase() }
+    const r = u.searchParams.get('reportId')
+    return r ? { relatorio: r.toLowerCase(), grupo: u.searchParams.get('groupId')?.toLowerCase() || null } : null
+  } catch { return null }
+}
+
+// Os painéis são verificados em paralelo: o login e a lista de relatórios ficam guardados como promessa
+let pbiToken = null
+async function entrarPowerBI() {
+    const r = await fetch(`https://login.microsoftonline.com/${PBI.tenant}/oauth2/v2.0/token`, {
+      method: 'POST',
+      body: new URLSearchParams({ grant_type: 'client_credentials', client_id: PBI.cliente, client_secret: PBI.segredo, scope: 'https://analysis.windows.net/powerbi/api/.default' }),
+      signal: AbortSignal.timeout(20000),
+    })
+    const j = await r.json()
+    if (!r.ok) throw new Error(`login no Entra ID falhou: ${j.error_description?.split('\r\n')[0] || j.error || r.status}`)
+    return j.access_token
+}
+async function powerbi(caminho) {
+  pbiToken ||= entrarPowerBI()
+  const r = await fetch(`${PBI_API}${caminho}`, { headers: { Authorization: `Bearer ${await pbiToken}` }, signal: AbortSignal.timeout(20000) })
+  if (!r.ok) { const e = new Error(`API do Power BI ${r.status}`); e.status = r.status; throw e }
+  return r.json()
+}
+
+// Relatórios de todos os workspaces em que o aplicativo foi adicionado: id -> { grupo, modelo }
+let pbiRelatorios = null
+function relatoriosPowerBI() {
+  pbiRelatorios ||= listarRelatoriosPowerBI()
+  return pbiRelatorios
+}
+async function listarRelatoriosPowerBI() {
+  const mapa = new Map()
+  const grupos = (await powerbi('/groups?$top=500')).value
+  for (const g of grupos) {
+    for (const rel of (await powerbi(`/groups/${g.id}/reports`)).value) {
+      mapa.set(rel.id.toLowerCase(), { grupo: rel.datasetWorkspaceId || g.id, modelo: rel.datasetId, workspace: g.name })
+    }
+  }
+  return mapa
+}
+
+const fmtData = (d) => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+const fmtHoras = (h) => (h < 1 ? 'menos de 1 h' : h < 48 ? `${Math.floor(h)} h` : `${Math.floor(h / 24)} dias`)
+
+// Devolve { situacao, detalhe } do painel
+async function verificarPainel(app) {
+  const ids = idsPowerBI(app.url)
+  if (!ids) return { situacao: 'atencao', detalhe: 'link do Power BI sem o ID do relatório' }
+  try {
+    const mapa = await relatoriosPowerBI()
+    const rel = mapa.get(ids.relatorio)
+    if (!rel && !mapa.size) return { situacao: 'atencao', detalhe: 'o aplicativo "Portal Núcleo - Monitor Power BI" ainda não aparece em nenhum workspace do Power BI (a permissão pode levar alguns minutos)' }
+    if (!rel) return { situacao: 'atencao', detalhe: 'o monitor não enxerga este relatório: adicione "Portal Núcleo - Monitor Power BI" como Colaborador no workspace dele' }
+    if (!rel.modelo) return { situacao: 'ok', detalhe: 'relatório sem modelo semântico próprio' }
+    const modelo = await powerbi(`/groups/${rel.grupo}/datasets/${rel.modelo}`)
+    if (modelo.isRefreshable === false) return { situacao: 'ok', detalhe: 'dados em conexão direta (sem atualização agendada)' }
+    let ultima
+    try { ultima = (await powerbi(`/groups/${rel.grupo}/datasets/${rel.modelo}/refreshes?$top=1`)).value[0] }
+    catch (e) {
+      if (e.status === 401 || e.status === 403) return { situacao: 'atencao', detalhe: 'sem permissão para ler o histórico de atualização: troque o aplicativo para Colaborador no workspace' }
+      throw e
+    }
+    if (!ultima) return { situacao: 'atencao', detalhe: 'o modelo semântico ainda não tem nenhuma atualização registrada' }
+    if (ultima.status === 'Failed') {
+      let motivo = ''
+      try { motivo = JSON.parse(ultima.serviceExceptionJson || '{}').errorCode || '' } catch {}
+      return { situacao: 'fora', detalhe: `a última atualização dos dados FALHOU em ${fmtData(ultima.endTime || ultima.startTime)}${motivo ? ` (${motivo})` : ''}` }
+    }
+    if (ultima.status === 'Unknown') return { situacao: 'ok', detalhe: `atualização dos dados em andamento desde ${fmtData(ultima.startTime)}` }
+    const fim = ultima.endTime || ultima.startTime
+    const horas = (Date.now() - new Date(fim)) / 3600000
+    const texto = `dados atualizados em ${fmtData(fim)} (há ${fmtHoras(horas)})`
+    if (ultima.status !== 'Completed') return { situacao: 'atencao', detalhe: `última atualização ${ultima.status === 'Cancelled' ? 'cancelada' : 'desativada'}; ${texto}` }
+    return horas > PBI_LIMITE_HORAS ? { situacao: 'atencao', detalhe: `dados desatualizados: ${texto}` } : { situacao: 'ok', detalhe: texto }
+  } catch (e) {
+    return { situacao: 'atencao', detalhe: `não foi possível consultar o Power BI (${e.message})` }
+  }
+}
+
 // ---------- Avaliação ----------
 function avaliar(site, banco, ssl) {
   const fora = [], atencao = []
@@ -195,9 +291,12 @@ async function sincronizarIssues(resultados) {
 
 // ---------- Execução ----------
 const apps = await portal('GET', 'aplicacoes?select=slug,nome,url,supabase_url,supabase_chave,supabase_tabela,ativo&order=ordem')
+const comPBI = PBI.tenant && PBI.cliente && PBI.segredo
+const paineis = apps.filter((a) => a.url && ehPowerBI(a))
 const alvos = [
   { slug: 'portal', nome: 'Portal do Núcleo', url: PORTAL_URL, supabase_url: SB_URL, proprio: true },
-  ...apps.filter((a) => a.url || a.supabase_url),
+  ...apps.filter((a) => (a.url || a.supabase_url) && !ehPowerBI(a)),
+  ...(comPBI ? paineis.map((a) => ({ ...a, painel: true })) : []),
 ]
 
 const icone = { ok: '🟢', atencao: '🟡', fora: '🔴' }
@@ -207,6 +306,10 @@ anotar('| | Aplicação | Site | Banco | HTTPS | Observação |')
 anotar('|---|---|---|---|---|---|')
 
 const resultados = await Promise.all(alvos.map(async (alvo) => {
+  if (alvo.painel) {
+    const { situacao, detalhe } = await verificarPainel(alvo)
+    return { alvo, v: { slug: alvo.slug, situacao, detalhe, site_status: null, site_ms: null, banco: 'sem', banco_ms: null, ssl_dias: null } }
+  }
   const [site, banco, ssl] = await Promise.all([
     alvo.url ? verificarSite(alvo.url) : null,
     alvo.proprio ? verificarBancoPortal() : verificarBanco(alvo),
@@ -224,10 +327,12 @@ const resultados = await Promise.all(alvos.map(async (alvo) => {
 }))
 
 for (const { alvo, v } of resultados) {
+  if (alvo.painel) { anotar(`| ${icone[v.situacao]} | ${alvo.nome} (painel) | — | — | — | ${v.detalhe || ''} |`); continue }
   const site = v.site_status ? `${v.site_status} · ${v.site_ms} ms` : alvo.url ? 'sem resposta' : '—'
   const banco = v.banco === 'sem' ? '—' : `${v.banco}${v.banco_ms ? ` · ${v.banco_ms} ms` : ''}`
   anotar(`| ${icone[v.situacao]} | ${alvo.nome} | ${site} | ${banco} | ${v.ssl_dias != null ? `${v.ssl_dias} dias` : '—'} | ${v.detalhe || ''} |`)
 }
+if (paineis.length && !comPBI) anotar(`\n_${paineis.length} painel(is) do Power BI sem monitoramento: faltam os segredos PBI_TENANT_ID, PBI_CLIENT_ID e PBI_CLIENT_SECRET._`)
 anotar('')
 
 if (!SIMULAR) {
