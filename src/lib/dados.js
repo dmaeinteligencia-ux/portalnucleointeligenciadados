@@ -6,15 +6,15 @@ const ordenar = lista => [...lista].sort((a, b) => a.ordem - b.ordem || a.nome.l
 const ok = async (consulta) => { const { data, error } = await consulta; if (error) throw error; return data }
 
 export async function listarAplicacoes({ todas = false } = {}) {
-  if (modoDemo) return ordenar(demo.aplicacoes.filter(a => todas || a.ativo))
+  if (modoDemo) return ordenar(demo.aplicacoes.filter(a => todas || a.ativo)).map(ajustar)
   let q = supabase.from('aplicacoes').select('*').order('ordem').order('nome')
   if (!todas) q = q.eq('ativo', true)
-  return ok(q)
+  return (await ok(q)).map(ajustar)
 }
 
 export async function obterAplicacao(slug) {
-  if (modoDemo) return demo.aplicacoes.find(a => a.slug === slug) || null
-  return ok(supabase.from('aplicacoes').select('*').eq('slug', slug).maybeSingle())
+  if (modoDemo) return ajustar(demo.aplicacoes.find(a => a.slug === slug) || null)
+  return ajustar(await ok(supabase.from('aplicacoes').select('*').eq('slug', slug).maybeSingle()))
 }
 
 export async function salvarAplicacao(app) {
@@ -81,11 +81,33 @@ export async function removerAutorizado(email) {
 export const rotuloTipo = { sistema: 'Sistema', painel: 'Painel de BI' }
 export const rotuloPlataforma = { powerbi: 'Power BI', looker: 'Looker Studio', metabase: 'Metabase', outro: 'Outra' }
 
-// Link de inserção do Power BI: aceita o endereço ou o código <iframe> inteiro copiado do Power BI.
+// Link de inserção do Power BI: aceita o endereço, o código <iframe> inteiro ou o link normal do relatório.
+// O link normal (app.powerbi.com/groups/<espaço>/reports/<relatório>/...) é bloqueado pelo Power BI dentro
+// de iframe, então vira o link de inserção segura (reportEmbed), que pede o login Microsoft no quadro.
 export function normalizarLinkPainel(texto) {
   const t = (texto || '').trim()
   const src = t.match(/src\s*=\s*["']([^"']+)["']/i)
-  return (src ? src[1] : t).replace(/&amp;/g, '&')
+  const url = (src ? src[1] : t).replace(/&amp;/g, '&')
+  let u
+  try { u = new URL(url) } catch { return url }
+  if (!/(^|\.)powerbi\.com$/i.test(u.hostname)) return url
+  const m = u.pathname.match(/\/groups\/([^/]+)\/reports\/([0-9a-f-]{36})(?:\/([^/?#]+))?/i)
+  if (!m) return url
+  const [, grupo, relatorio, pagina] = m
+  const p = new URLSearchParams({ reportId: relatorio })
+  if (grupo !== 'me') p.set('groupId', grupo)
+  if (pagina && !/^reportsection$/i.test(pagina)) p.set('pageName', pagina)
+  p.set('autoAuth', 'true')
+  const ctid = u.searchParams.get('ctid')
+  if (ctid) p.set('ctid', ctid)
+  return `${u.origin}/reportEmbed?${p}`
+}
+export const linkPowerBI = url => /^https:\/\/([a-z0-9-]+\.)*powerbi\.com\//i.test(url || '')
+
+// Cadastros antigos ou feitos como "Sistema" com link do Power BI passam a ser tratados como painel.
+function ajustar(app) {
+  if (!app || !linkPowerBI(app.url)) return app
+  return { ...app, tipo: 'painel', plataforma: app.plataforma || 'powerbi', url: normalizarLinkPainel(app.url) }
 }
 // "Publicar na web" gera app.powerbi.com/view?r=..., que qualquer pessoa com o link consegue abrir.
 export const linkPublicoPowerBI = url => /powerbi\.com\/view\?r=/i.test(url || '')

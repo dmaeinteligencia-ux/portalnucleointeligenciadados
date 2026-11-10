@@ -3,7 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import {
   listarAplicacoes, salvarAplicacao, listarAutorizados, autorizar, removerAutorizado,
   listarAvisos, salvarAviso, listarAcessos, rotuloStatus, rotuloTipo, rotuloPlataforma,
-  normalizarLinkPainel, linkPublicoPowerBI,
+  normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI,
 } from '../lib/dados'
 import { auth } from '../lib/auth'
 
@@ -39,6 +39,7 @@ function chaveSecreta(chave) {
 async function gravarApp() {
   const app = { ...editandoApp.value }
   if (!app.slug) app.slug = gerarSlug(app.nome)
+  if (linkPowerBI(app.url)) app.tipo = 'painel' // link do Power BI é sempre painel
   if (app.tipo === 'painel') {
     app.url = normalizarLinkPainel(app.url)
     if (!app.plataforma) app.plataforma = 'powerbi'
@@ -105,7 +106,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
           <select v-model="editandoApp.status"><option v-for="(r, v) in rotuloStatus" :key="v" :value="v">{{ r }}</option></select>
         </label>
         <label v-if="editandoApp.tipo === 'painel'" class="largo">Link de inserção do painel
-          <input v-model="editandoApp.url" placeholder="Power BI: Arquivo › Inserir relatório › Site ou portal (cole o link ou o código &lt;iframe&gt;)" />
+          <input v-model="editandoApp.url" placeholder="Cole o link do relatório do Power BI (o portal converte para o link de inserção)" />
           <small v-if="linkPublicoPowerBI(editandoApp.url)" class="perigo">Link do "Publicar na web": fica aberto para qualquer pessoa com o link.</small>
         </label>
         <label v-else>Endereço (URL)<input v-model="editandoApp.url" type="url" placeholder="https://" /></label>

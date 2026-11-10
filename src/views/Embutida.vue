@@ -44,6 +44,12 @@ function alternarTelaCheia() {
 const recarregar = () => { carregando.value = true; const f = moldura.value.querySelector('iframe'); f.src = f.src }
 // Volta para a tela de onde a pessoa veio (início ou lista); sem histórico, vai para a lista
 const voltar = () => (window.history.state?.back ? router.back() : router.push('/aplicacoes'))
+// Login Microsoft numa janelinha: o Power BI guarda a sessão e o painel recarrega já autenticado.
+function entrarMicrosoft() {
+  const janela = window.open('https://app.powerbi.com/', 'pbi-login', 'width=520,height=700')
+  if (!janela) return novaAba()
+  const espera = setInterval(() => { if (janela.closed) { clearInterval(espera); recarregar() } }, 800)
+}
 const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
 </script>
 
@@ -62,6 +68,10 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
         <button class="botao secundario" @click="novaAba">Abrir em nova aba ↗</button>
       </div>
     </div>
+    <div v-if="painel && app.plataforma === 'powerbi'" class="login-painel">
+      <span>⛨ Painel protegido. Entre com a sua conta Microsoft do DMAE para ver os dados.</span>
+      <button class="botao brilho" @click="entrarMicrosoft">Entrar com a Microsoft</button>
+    </div>
     <div ref="moldura" class="moldura-app" :class="{ 'moldura-painel': painel }">
       <span class="canto c1" /><span class="canto c2" /><span class="canto c3" /><span class="canto c4" />
       <div v-if="carregando" class="carregando-app"><span class="anel-carga" /><small>Conectando à {{ app.nome }}…</small></div>
@@ -72,7 +82,7 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
       </div>
       <iframe :src="app.url" :title="app.nome" allow="clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin" @load="carregando = false" />
     </div>
-    <p v-if="painel && app.plataforma === 'powerbi'" class="dica-embutida">Se o Power BI pedir, clique em <strong>Entrar</strong> e use sua conta Microsoft do DMAE. Você só vê os painéis que foram compartilhados com você no Power BI. Se não carregar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
+    <p v-if="painel && app.plataforma === 'powerbi'" class="dica-embutida">Depois de entrar e fechar a janela da Microsoft, o painel recarrega sozinho. Você só vê os painéis que foram compartilhados com você no Power BI. Se não carregar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
     <p v-else class="dica-embutida">Se a tela ficar em branco ou o login não completar, use <button class="botao-link" @click="novaAba">Abrir em nova aba</button>.</p>
   </template>
   <p v-else-if="carregado" class="suave">Aplicação não encontrada ou sem endereço cadastrado.</p>

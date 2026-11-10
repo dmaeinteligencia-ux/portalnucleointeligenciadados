@@ -490,3 +490,4 @@ select option { background: var(--fundo-2); }
 .moldura-painel iframe { background: #fff; }
 .quebra { word-break: break-all; }
 small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
+.login-painel { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; padding: 10px 14px; border: 1px solid rgba(255, 212, 121, 0.45); border-radius: 10px; background: rgba(255, 212, 121, 0.06); color: #ffd479; font-size: .9rem; }
