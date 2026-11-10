@@ -12,7 +12,7 @@ const pessoas = ref([])
 const avisos = ref([])
 const acessos = ref([])
 
-const appVazia = () => ({ nome: '', slug: '', descricao: '', area: '', status: 'producao', url: '', responsavel: '', ativo: true, restrita: false, ordem: 100 })
+const appVazia = () => ({ nome: '', slug: '', descricao: '', area: '', status: 'producao', url: '', responsavel: '', ativo: true, restrita: false, ordem: 100, supabase_url: '', supabase_chave: '', supabase_tabela: '' })
 const editandoApp = ref(null)
 const novaPessoa = reactive({ email: '', nome: '', papel: 'usuario' })
 const novoAviso = reactive({ titulo: '', texto: '', ativo: true })
@@ -30,9 +30,18 @@ const dataHora = d => new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', 
 const avisar = t => { mensagem.value = t; setTimeout(() => (mensagem.value = ''), 3000) }
 const gerarSlug = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
+function chaveSecreta(chave) {
+  if (!chave) return false
+  if (chave.startsWith('sb_secret_')) return true
+  try { return JSON.parse(atob(chave.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'service_role' } catch { return false }
+}
 async function gravarApp() {
   const app = { ...editandoApp.value }
   if (!app.slug) app.slug = gerarSlug(app.nome)
+  for (const c of ['supabase_url', 'supabase_chave', 'supabase_tabela']) app[c] = (app[c] || '').trim().replace(/\/$/, '') || null
+  if (chaveSecreta(app.supabase_chave)) {
+    return avisar('Essa é a chave secreta do Supabase. Use a chave publishable (anon).')
+  }
   await salvarAplicacao(app)
   editandoApp.value = null
   await carregar()
@@ -86,6 +95,9 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
         <label>Responsável<input v-model="editandoApp.responsavel" /></label>
         <label>Ordem<input v-model.number="editandoApp.ordem" type="number" /></label>
         <label class="largo">Descrição<textarea v-model="editandoApp.descricao" rows="3" /></label>
+        <label>Supabase da aplicação (monitoramento)<input v-model="editandoApp.supabase_url" type="url" placeholder="https://xxxx.supabase.co" /></label>
+        <label>Chave publishable do Supabase<input v-model="editandoApp.supabase_chave" placeholder="sb_publishable_… (nunca a secreta)" /></label>
+        <label>Tabela para consulta (opcional)<input v-model="editandoApp.supabase_tabela" placeholder="se o banco não tem a função ping()" /></label>
         <label class="caixa"><input v-model="editandoApp.ativo" type="checkbox" /> Visível no portal</label>
         <label class="caixa"><input v-model="editandoApp.restrita" type="checkbox" /> Restrita a pessoas específicas</label>
       </div>

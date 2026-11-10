@@ -6,12 +6,16 @@ import HudPanel from '../components/HudPanel.vue'
 import NucleoOrb from '../components/NucleoOrb.vue'
 import CartaoApp from '../components/CartaoApp.vue'
 import Medidor from '../components/Medidor.vue'
+import { saude, rotuloSituacao } from '../lib/saude'
 
 const admin = auth.usuario.papel === 'admin'
 const apps = ref([]), avisos = ref([]), acessos = ref([]), pessoas = ref([])
 const hoje = new Date().toDateString()
 const acessosHoje = computed(() => acessos.value.filter(a => new Date(a.em).toDateString() === hoje).length)
 const porApp = computed(() => apps.value.map(a => ({ app: a, total: acessos.value.filter(x => x.aplicacao_id === a.id).length })))
+const situacao = slug => saude.porSlug[slug]?.situacao
+const noAr = computed(() => apps.value.filter(a => situacao(a.slug) !== 'fora').length)
+const comProblema = computed(() => apps.value.filter(a => ['fora', 'atencao'].includes(situacao(a.slug))).length)
 const nomeApp = id => apps.value.find(a => a.id === id)?.nome || '—'
 const hora = d => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 const dia = d => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
@@ -31,7 +35,7 @@ async function abrir(app) {
   <div class="painel-central">
     <HudPanel titulo="Visão geral" class="area-visao" :atraso="0">
       <ul class="lista-status">
-        <li><span class="ic-quad">▦</span><span><strong>Aplicações</strong><small class="ok">{{ apps.length }} online</small></span></li>
+        <li><span class="ic-quad">▦</span><span><strong>Aplicações</strong><small :class="comProblema ? '' : 'ok'">{{ noAr }} de {{ apps.length }} no ar<template v-if="comProblema"> · {{ comProblema }} com alerta</template></small></span></li>
         <li><span class="ic-quad">✉</span><span><strong>Avisos</strong><small>{{ avisos.length }} ativos</small></span></li>
         <li v-if="admin"><span class="ic-quad">◉</span><span><strong>Usuários</strong><small>{{ pessoas.length }} autorizados</small></span></li>
         <li v-if="admin"><span class="ic-quad">↗</span><span><strong>Acessos hoje</strong><small>{{ acessosHoje }} registrados</small></span></li>
@@ -50,8 +54,8 @@ async function abrir(app) {
         </li>
         <li v-for="(a, i) in apps" :key="a.id" :style="{ animationDelay: `${420 + (avisos.length + i) * 120}ms` }">
           <span class="ic-quad">▲</span>
-          <span><strong>{{ a.nome }} disponível</strong><small>{{ a.area }}</small></span>
-          <em class="tag ok">ONLINE</em>
+          <span><strong>{{ a.nome }} {{ situacao(a.slug) === 'fora' ? 'fora do ar' : 'disponível' }}</strong><small>{{ saude.porSlug[a.slug]?.detalhe || a.area }}</small></span>
+          <em class="tag" :class="situacao(a.slug) && situacao(a.slug) !== 'ok' ? situacao(a.slug) : 'ok'">{{ situacao(a.slug) ? rotuloSituacao[situacao(a.slug)] : 'ONLINE' }}</em>
         </li>
       </ul>
     </HudPanel>

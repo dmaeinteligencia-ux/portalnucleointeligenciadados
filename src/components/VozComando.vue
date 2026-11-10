@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import NucleoOrb from './NucleoOrb.vue'
 import { auth, sair } from '../lib/auth'
 import { listarAplicacoes } from '../lib/dados'
+import { carregarSaude, resumoSaude } from '../lib/saude'
 import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, bipe, definirAutomatica, microfonePermitido, PALAVRA } from '../lib/voz'
 
 const router = useRouter()
@@ -123,7 +124,7 @@ function aoAcao(r) {
       return app ? executarAcao({ tipo: 'abrir', app, novaAba: !!r.nova_aba }) : responder(r.fala || 'Não encontrei essa aplicação.')
     }
     case 'ir':
-      return ['/', '/aplicacoes', '/admin'].includes(r.para) ? executarAcao({ tipo: 'ir', para: r.para, fala: r.fala || 'Certo.' }) : responder(r.fala || 'Não entendi o comando.')
+      return ['/', '/aplicacoes', '/admin', '/saude'].includes(r.para) ? executarAcao({ tipo: 'ir', para: r.para, fala: r.fala || 'Certo.' }) : responder(r.fala || 'Não entendi o comando.')
     case 'voltar':
       return executarAcao({ tipo: 'voltar', fala: r.fala || 'Voltando.' })
     case 'horas':
@@ -146,12 +147,15 @@ async function executarAcao(acao) {
       return responder(novaAba ? `O navegador bloqueou a nova aba. Abrindo ${app.nome} no portal.` : `Abrindo ${app.nome}.`)
     }
     case 'ir':
-      if (acao.para === '/admin' && auth.usuario?.papel !== 'admin') return responder('A administração é só para administradores.')
+      if (['/admin', '/saude'].includes(acao.para) && auth.usuario?.papel !== 'admin') return responder('A administração é só para administradores.')
       router.push(acao.para)
       return responder(acao.fala)
     case 'voltar':
       router.back()
       return responder(acao.fala)
+    case 'saude':
+      await carregarSaude({ forcar: true })
+      return responder(resumoSaude(Object.fromEntries(apps.value.map((a) => [a.slug, a.nome]))))
     case 'horas':
       return responder(`São ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`)
     case 'parar':

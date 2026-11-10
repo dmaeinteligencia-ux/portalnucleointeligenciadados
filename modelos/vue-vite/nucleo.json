@@ -6,5 +6,10 @@
   "status": "desenvolvimento",
   "url": "https://novo-sistema.vercel.app",
   "responsavel": "Nome de quem cuida do sistema",
-  "portal": true
+  "portal": true,
+  "monitorar": {
+    "supabase_url": "https://SEU-PROJETO.supabase.co",
+    "supabase_chave": "sb_publishable_...",
+    "tabela": ""
+  }
 }

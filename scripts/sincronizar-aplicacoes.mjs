@@ -3,7 +3,8 @@
 // Lê o arquivo nucleo.json de cada repositório do dono no GitHub e cadastra ou atualiza
 // a aplicação na tabela "aplicacoes" do Supabase do portal.
 // - Aplicação nova entra oculta (ativo = false) até um admin liberar no painel.
-// - Aplicação existente tem nome, descrição, área, status, endereço e responsável atualizados.
+// - Aplicação existente tem nome, descrição, área, status, endereço, responsável e o Supabase
+//   do bloco "monitorar" atualizados.
 //   "ativo", "restrita", "ordem" e as permissões continuam sendo decididos no painel.
 //
 // Variáveis (GitHub Actions → Secrets):
@@ -76,7 +77,23 @@ function validar(ficha, repo) {
   if (ficha.url && !/^https:\/\//.test(ficha.url)) erros.push('url deve começar com https://')
   const dados = { slug }
   for (const c of CAMPOS) if (ficha[c] !== undefined && ficha[c] !== '') dados[c] = ficha[c]
+  // Bloco "monitorar": Supabase da aplicação, usado pelo monitoramento (scripts/monitorar-aplicacoes.mjs)
+  const m = ficha.monitorar
+  const preenchido = (v) => v && !/SEU-PROJETO|\.\.\.$/.test(String(v))
+  if (m && typeof m === 'object' && preenchido(m.supabase_url) && preenchido(m.supabase_chave)) {
+    if (m.supabase_url && !/^https:\/\/[^/]+$/.test(String(m.supabase_url).replace(/\/$/, ''))) erros.push('monitorar.supabase_url deve ser https://<ref>.supabase.co')
+    if (m.supabase_chave && chaveSecreta(m.supabase_chave)) erros.push('monitorar.supabase_chave é a chave SECRETA; use a publishable (anon). Troque a chave secreta no Supabase, ela ficou exposta no repositório')
+    if (m.supabase_url) dados.supabase_url = String(m.supabase_url).replace(/\/$/, '')
+    if (m.supabase_chave) dados.supabase_chave = m.supabase_chave
+    if (m.tabela) dados.supabase_tabela = m.tabela
+  }
   return { erros, dados }
+}
+
+// Chave service_role / secreta nunca pode ir no nucleo.json
+function chaveSecreta(chave) {
+  if (String(chave).startsWith('sb_secret_')) return true
+  try { return JSON.parse(Buffer.from(String(chave).split('.')[1], 'base64url').toString()).role === 'service_role' } catch { return false }
 }
 
 // Avisa se o sistema não pode ser aberto dentro do portal.

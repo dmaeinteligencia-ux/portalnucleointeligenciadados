@@ -1,15 +1,24 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth, sair } from './lib/auth'
 import { modoDemo } from './lib/supabase'
 import Relogio from './components/Relogio.vue'
 import VozComando from './components/VozComando.vue'
+import { saude, carregarSaude } from './lib/saude'
 
 const router = useRouter()
 const busca = ref('')
 const buscar = () => router.push({ path: '/aplicacoes', query: busca.value ? { q: busca.value } : {} })
 const fazerSair = async () => { await sair(); router.push('/entrar') }
+// Pílula do topo: mostra se o monitoramento achou algum sistema com problema
+watch(() => auth.usuario, (u) => { if (u) carregarSaude() }, { immediate: true })
+const situacaoGeral = computed(() => {
+  const lista = Object.values(saude.porSlug)
+  if (lista.some((v) => v.situacao === 'fora')) return { classe: 'alerta', texto: 'SISTEMA FORA DO AR' }
+  if (lista.some((v) => v.situacao === 'atencao')) return { classe: 'atencao', texto: 'ATENÇÃO' }
+  return { classe: '', texto: 'OPERACIONAL' }
+})
 const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('')
 </script>
 
@@ -24,6 +33,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
       <nav class="menu">
         <RouterLink to="/" class="item"><span class="ic">◈</span>Central</RouterLink>
         <RouterLink to="/aplicacoes" class="item"><span class="ic">▦</span>Aplicações</RouterLink>
+        <RouterLink v-if="auth.usuario.papel === 'admin'" to="/saude" class="item"><span class="ic">♥</span>Saúde</RouterLink>
         <RouterLink v-if="auth.usuario.papel === 'admin'" to="/admin" class="item"><span class="ic">⚙</span>Administração</RouterLink>
       </nav>
       <div class="lateral-rodape">
@@ -37,7 +47,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
 
     <div class="principal">
       <header class="topo">
-        <div class="pilula-status"><span>STATUS DO SISTEMA</span><b><i />{{ modoDemo ? 'DEMONSTRAÇÃO' : 'OPERACIONAL' }}</b></div>
+        <component :is="auth.usuario.papel === 'admin' ? 'RouterLink' : 'div'" to="/saude" class="pilula-status" :class="situacaoGeral.classe"><span>STATUS DO SISTEMA</span><b><i />{{ modoDemo && !situacaoGeral.classe ? 'DEMONSTRAÇÃO' : situacaoGeral.texto }}</b></component>
         <Relogio class="topo-relogio" />
         <form class="busca" @submit.prevent="buscar">
           <span aria-hidden="true">⌕</span>
