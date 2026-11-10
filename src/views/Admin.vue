@@ -130,8 +130,8 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
       <thead><tr><th>Aplicação</th><th>Tipo</th><th>Área</th><th>Status</th><th>Visível</th><th></th></tr></thead>
       <tbody>
         <tr v-for="app in apps" :key="app.id">
-          <td><strong>{{ app.nome }}</strong><br /><small class="suave quebra">{{ app.url || 'sem link' }}</small></td>
-          <td>{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || ''}` : 'Sistema' }}</td>
+          <td><strong>{{ app.nome }}</strong><br /><small class="suave link-curto" :title="app.url">{{ app.url || 'sem link' }}</small></td>
+          <td class="sem-quebra">{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || ''}` : 'Sistema' }}</td>
           <td>{{ app.area }}</td>
           <td><span class="etiqueta" :class="`status-${app.status}`">{{ rotuloStatus[app.status] }}</span></td>
           <td>{{ app.ativo ? 'Sim' : 'Não' }}</td>

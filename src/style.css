@@ -491,3 +491,6 @@ select option { background: var(--fundo-2); }
 .quebra { word-break: break-all; }
 small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .login-painel { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; padding: 10px 14px; border: 1px solid rgba(255, 212, 121, 0.45); border-radius: 10px; background: rgba(255, 212, 121, 0.06); color: #ffd479; font-size: .9rem; }
+.etiqueta, .sem-quebra { white-space: nowrap; }
+.tabela td:first-child { max-width: 0; width: 55%; }
+.link-curto { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
