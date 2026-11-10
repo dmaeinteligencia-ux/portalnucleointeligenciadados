@@ -22,7 +22,8 @@ const SB_CHAVE = process.env.SUPABASE_SERVICE_ROLE_KEY
 const DONO = process.env.NUCLEO_DONO || (process.env.GITHUB_REPOSITORY || '').split('/')[0]
 const SIMULAR = process.env.SIMULAR === '1'
 const STATUS = ['producao', 'piloto', 'desenvolvimento']
-const CAMPOS = ['nome', 'descricao', 'area', 'status', 'url', 'responsavel']
+const CAMPOS = ['nome', 'descricao', 'area', 'status', 'url', 'responsavel', 'tipo', 'plataforma']
+const TIPOS = ['sistema', 'painel']
 
 const relatorio = []
 const anotar = (linha) => { console.log(linha); relatorio.push(linha) }
@@ -74,6 +75,7 @@ function validar(ficha, repo) {
   if (!/^[a-z0-9-]+$/.test(slug)) erros.push('slug só pode ter letras minúsculas, números e hífen')
   if (!ficha.nome) erros.push('falta "nome"')
   if (ficha.status && !STATUS.includes(ficha.status)) erros.push(`status deve ser ${STATUS.join(', ')}`)
+  if (ficha.tipo && !TIPOS.includes(ficha.tipo)) erros.push(`tipo deve ser ${TIPOS.join(' ou ')}`)
   if (ficha.url && !/^https:\/\//.test(ficha.url)) erros.push('url deve começar com https://')
   const dados = { slug }
   for (const c of CAMPOS) if (ficha[c] !== undefined && ficha[c] !== '') dados[c] = ficha[c]
@@ -146,7 +148,8 @@ for (const repo of repos) {
   const { erros: problemas, dados } = validar(ficha, repo)
   if (problemas.length) { erros++; anotar(`- ⚠️ ${repo.name}: ${problemas.join('; ')}`); continue }
 
-  const aviso = dados.url ? await conferirEmbutir(dados.url) : 'sem endereço'
+  // Painéis de BI abrem pelo link de inserção da ferramenta, sem o embutido.js do portal
+  const aviso = !dados.url ? 'sem endereço' : dados.tipo === 'painel' ? null : await conferirEmbutir(dados.url)
   const sufixo = aviso ? ` (atenção: ${aviso})` : ''
   try {
     if (slugs.has(dados.slug)) {

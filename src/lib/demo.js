@@ -18,6 +18,13 @@ export const demo = {
       url: 'https://exemplo.com/agenda-lavagem', responsavel: 'Núcleo de Inteligência de Dados',
       restrita: false, ativo: true, ordem: 20,
     },
+    {
+      id: 'a3', slug: 'painel-indicadores', nome: 'Indicadores operacionais', area: 'Gestão', status: 'producao',
+      tipo: 'painel', plataforma: 'powerbi',
+      descricao: 'Painel do Power BI com os principais indicadores do DMAE.',
+      url: 'https://app.powerbi.com/reportEmbed?reportId=00000000-0000-0000-0000-000000000000&autoAuth=true',
+      responsavel: 'Núcleo de Inteligência de Dados', restrita: false, ativo: true, ordem: 30,
+    },
   ],
   avisos: [
     { id: 'v1', titulo: 'Bem-vindo ao portal', texto: 'Todas as aplicações do Núcleo agora ficam reunidas aqui.', ativo: true, publicado_em: '2026-11-06T12:00:00Z' },

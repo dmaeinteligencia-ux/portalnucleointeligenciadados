@@ -73,11 +73,11 @@ p { line-height: 1.45; }
 }
 .menu .item .ic { width: 22px; text-align: center; color: var(--ciano); opacity: .7; }
 .menu .item:hover { color: var(--texto); background: rgba(56, 214, 255, 0.06); }
-.menu .item.router-link-exact-active, .menu .item.router-link-active:not([href="/"]) {
+.menu .item.router-link-exact-active:not(.desmarcado), .menu .item.router-link-active:not([href="/"]):not(.desmarcado) {
   color: var(--ciano-claro); background: linear-gradient(90deg, rgba(56, 214, 255, 0.16), rgba(56, 214, 255, 0.02));
   border-color: var(--borda-forte); box-shadow: var(--brilho);
 }
-.menu .item.router-link-exact-active::before, .menu .item.router-link-active:not([href="/"])::before {
+.menu .item.router-link-exact-active:not(.desmarcado)::before, .menu .item.router-link-active:not([href="/"]):not(.desmarcado)::before {
   content: ""; position: absolute; left: -1rem; top: 20%; bottom: 20%; width: 3px; background: var(--ciano); box-shadow: 0 0 10px var(--ciano);
 }
 .lateral-rodape { margin-top: auto; display: grid; gap: 1rem; }
@@ -484,3 +484,9 @@ select option { background: var(--fundo-2); }
 .aviso-erro { background: rgba(255, 107, 125, 0.08); border: 1px solid rgba(255, 107, 125, 0.4); color: var(--vermelho); border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
 .tag.atencao { color: var(--amarelo); border-color: rgba(255, 201, 77, 0.45); }
 .tag.fora { color: var(--vermelho); border-color: rgba(255, 107, 125, 0.5); }
+
+/* Painéis de BI */
+.cartao-painel .icone-app { color: #ffd479; border-color: rgba(255, 212, 121, 0.55); background: radial-gradient(circle, rgba(255, 212, 121, 0.22), rgba(255, 212, 121, 0.03)); box-shadow: inset 0 0 14px rgba(255, 212, 121, 0.25); }
+.moldura-painel iframe { background: #fff; }
+.quebra { word-break: break-all; }
+small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
