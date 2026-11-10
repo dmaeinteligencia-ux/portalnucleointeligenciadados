@@ -358,7 +358,8 @@ select option { background: var(--fundo-2); }
 .acoes-detalhe { display: flex; gap: .6rem; flex-wrap: wrap; }
 .embutida { display: flex; flex-direction: column; gap: .75rem; height: calc(100vh - 140px); min-height: 520px; }
 .barra-embutida { display: flex; align-items: center; gap: .9rem; padding: .6rem .9rem; border: 1px solid var(--borda); border-radius: 12px; background: var(--painel); animation: surgir .4s both; }
-.voltar-mini { font-weight: 600; white-space: nowrap; }
+.voltar-mini { font: inherit; font-weight: 600; white-space: nowrap; color: var(--ciano); background: none; border: 0; padding: 0; cursor: pointer; }
+.voltar-mini:hover { text-decoration: underline; }
 .icone-app.mini { width: 34px; height: 34px; font-size: .9rem; grid-row: auto; }
 .embutida-nome { display: grid; line-height: 1.15; }
 .embutida-nome strong { font-size: 1.02rem; }
