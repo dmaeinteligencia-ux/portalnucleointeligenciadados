@@ -292,7 +292,8 @@ async function sincronizarIssues(resultados) {
 // ---------- Execução ----------
 const apps = await portal('GET', 'aplicacoes?select=slug,nome,url,supabase_url,supabase_chave,supabase_tabela,ativo&order=ordem')
 const comPBI = PBI.tenant && PBI.cliente && PBI.segredo
-const paineis = apps.filter((a) => a.url && ehPowerBI(a))
+// Painéis ocultos (recém-cadastrados automaticamente, ainda não liberados) não geram alertas
+const paineis = apps.filter((a) => a.url && ehPowerBI(a) && a.ativo)
 const alvos = [
   { slug: 'portal', nome: 'Portal do Núcleo', url: PORTAL_URL, supabase_url: SB_URL, proprio: true },
   ...apps.filter((a) => (a.url || a.supabase_url) && !ehPowerBI(a)),
