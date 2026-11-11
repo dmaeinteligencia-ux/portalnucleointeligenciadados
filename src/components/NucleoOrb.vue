@@ -15,7 +15,7 @@ const CORES = {
   falando: [[90, 225, 255], [200, 245, 255]],
 }
 const tela = ref(null)
-let quadro = 0
+let quadro = 0, observador = null
 
 onMounted(() => {
   const c = tela.value, ctx = c.getContext('2d')
@@ -28,7 +28,9 @@ onMounted(() => {
   let ang = 0, pulso = 0
   const desenhar = () => {
     const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight
-    if (c.width !== w * dpr) { c.width = w * dpr; c.height = h * dpr }
+    // Confere largura E altura: se só a altura do quadro muda (layout carregando), o desenho esticava.
+    const lw = Math.round(w * dpr), lh = Math.round(h * dpr)
+    if (c.width !== lw || c.height !== lh) { c.width = lw; c.height = lh }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
     const modo = props.modo
@@ -65,8 +67,10 @@ onMounted(() => {
     if (!reduzir) quadro = requestAnimationFrame(desenhar)
   }
   desenhar()
+  // Sem animação, redesenha quando o quadro muda de tamanho.
+  if (reduzir) { observador = new ResizeObserver(() => desenhar()); observador.observe(c) }
 })
-onBeforeUnmount(() => cancelAnimationFrame(quadro))
+onBeforeUnmount(() => { cancelAnimationFrame(quadro); observador?.disconnect() })
 </script>
 
 <template>
