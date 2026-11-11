@@ -6,6 +6,7 @@ import {
   normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI,
 } from '../lib/dados'
 import { auth } from '../lib/auth'
+import { useRoute } from 'vue-router'
 
 const aba = ref('aplicacoes')
 const apps = ref([])
@@ -24,7 +25,13 @@ async function carregar() {
     listarAplicacoes({ todas: true }), listarAutorizados(), listarAvisos({ todos: true }), listarAcessos(),
   ])
 }
-onMounted(carregar)
+const rota = useRoute()
+onMounted(async () => {
+  await carregar()
+  // Vindo do atalho "Editar" da tela Saúde: abre direto o cadastro da aplicação.
+  const app = rota.query.editar && apps.value.find(a => a.slug === rota.query.editar)
+  if (app) { aba.value = 'aplicacoes'; editandoApp.value = { ...app } }
+})
 
 const nomeApp = id => apps.value.find(a => a.id === id)?.nome || '—'
 const dataHora = d => new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })

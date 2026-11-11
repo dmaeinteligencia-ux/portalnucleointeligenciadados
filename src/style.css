@@ -474,13 +474,31 @@ select option { background: var(--fundo-2); }
 .saude-detalhe { margin: 0; color: var(--amarelo); font-size: .9rem; }
 .saude-detalhe.fora { color: var(--vermelho); }
 .saude-dias { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; }
-.saude-dias span { height: 26px; border-radius: 3px; background: rgba(125, 155, 187, 0.18); transform-origin: bottom; animation: crescer .5s both; }
+.saude-dias button { padding: 0; border: 0; cursor: pointer; height: 26px; border-radius: 3px; background: rgba(125, 155, 187, 0.18); transform-origin: bottom; animation: crescer .5s both; }
 .saude-dias .d-ok { background: rgba(52, 245, 164, 0.55); box-shadow: 0 0 6px rgba(52, 245, 164, 0.35); }
 .saude-dias .d-atencao { background: rgba(255, 201, 77, 0.75); }
 .saude-dias .d-fora { background: rgba(255, 107, 125, 0.85); box-shadow: 0 0 6px rgba(255, 107, 125, 0.5); }
+.saude-dias button:hover, .saude-dias button:focus-visible { outline: 2px solid var(--ciano); outline-offset: 1px; }
+.saude-dias button.aberto { outline: 2px solid var(--ciano-claro); outline-offset: 1px; }
+.filtro-saude { font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.filtro-saude:hover { transform: translateY(-2px); box-shadow: 0 0 18px rgba(56, 214, 255, 0.25); }
+.filtro-saude.ativo { border-color: var(--ciano); box-shadow: 0 0 22px rgba(56, 214, 255, 0.4); }
+.filtro-aviso { margin: 0 0 .8rem; color: var(--suave); }
+.saude-acoes { display: flex; flex-wrap: wrap; gap: .45rem; }
+.saude-acoes .acao { font-size: .85rem; font-weight: 600; padding: .35rem .7rem; border-radius: 999px; border: 1px solid var(--borda-forte); color: var(--ciano); text-decoration: none; transition: background .2s, box-shadow .2s; }
+.saude-acoes .acao:hover { background: rgba(56, 214, 255, 0.1); box-shadow: 0 0 12px rgba(56, 214, 255, 0.3); }
+.saude-acoes .acao.principal { background: rgba(56, 214, 255, 0.15); }
+.saude-acoes .acao.alerta { color: var(--vermelho); border-color: rgba(255, 107, 125, 0.6); }
+.saude-dia { border: 1px solid var(--borda); border-radius: 8px; padding: .6rem .8rem; background: rgba(56, 214, 255, 0.03); animation: surgir .3s both; }
+.saude-dia-topo { display: flex; justify-content: space-between; margin-bottom: .4rem; }
+.saude-dia ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
+.saude-dia li { display: flex; flex-wrap: wrap; gap: .3rem .7rem; font-size: .88rem; }
+.saude-dia .hora { font-family: var(--fonte-hud); color: var(--ciano-claro); }
+.saude-dia .situacao.ok { color: var(--verde); } .saude-dia .situacao.atencao { color: var(--amarelo); } .saude-dia .situacao.fora { color: var(--vermelho); }
+.saude-dia .detalhe { flex-basis: 100%; color: var(--suave); }
 .saude-eixo { display: flex; justify-content: space-between; font-size: .72rem; color: var(--suave); }
 @keyframes crescer { from { transform: scaleY(0); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .saude-dias span, .luz-saude i { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .saude-dias button, .luz-saude i { animation: none !important; } }
 .aviso-erro { background: rgba(255, 107, 125, 0.08); border: 1px solid rgba(255, 107, 125, 0.4); color: var(--vermelho); border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
 .tag.atencao { color: var(--amarelo); border-color: rgba(255, 201, 77, 0.45); }
 .tag.fora { color: var(--vermelho); border-color: rgba(255, 107, 125, 0.5); }
