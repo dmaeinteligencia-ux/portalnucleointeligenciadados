@@ -1,8 +1,9 @@
 // Cadastro automático dos painéis do Power BI no portal.
 //
 // Lê todos os relatórios dos workspaces em que o aplicativo "Portal Núcleo - Monitor Power BI"
-// foi adicionado (como Colaborador) e cadastra cada relatório novo como painel OCULTO na tabela
-// "aplicacoes", já com o link de inserção segura. Um admin confere e libera no painel.
+// foi adicionado (como Colaborador) e cadastra cada relatório novo como painel VISÍVEL na tabela
+// "aplicacoes", já com o link de inserção segura. Ele entra direto no monitoramento
+// (sem fase de liberação). Um admin pode ocultar pelo painel se não quiser exibir.
 // Painéis já cadastrados (mesmo reportId) não são alterados: nome, área e descrição ficam
 // como o admin deixou. Relatórios automáticos de "métricas de uso" são ignorados.
 //
@@ -85,11 +86,11 @@ for (const g of grupos) {
     const dados = {
       slug, nome: rel.name, tipo: 'painel', plataforma: 'powerbi', status: 'producao',
       area: g.name, descricao: `Painel do Power BI do workspace ${g.name}.`,
-      url: `https://app.powerbi.com/reportEmbed?${p}`, ativo: false,
+      url: `https://app.powerbi.com/reportEmbed?${p}`, ativo: true,
     }
     if (!SIMULAR) await supabase('POST', 'aplicacoes', dados)
     novos++
-    anotar(`- 🆕 ${rel.name} (${g.name}): cadastrado oculto, aguardando um admin liberar no painel`)
+    anotar(`- 🆕 ${rel.name} (${g.name}): cadastrado e já visível no portal e no monitoramento`)
   }
 }
 anotar('')
