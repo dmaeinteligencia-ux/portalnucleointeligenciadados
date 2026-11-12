@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { auth } from '../lib/auth'
 import { listarAplicacoes, listarAvisos, listarAcessos, listarAutorizados, registrarAcesso } from '../lib/dados'
 import HudPanel from '../components/HudPanel.vue'
@@ -19,6 +19,38 @@ const comProblema = computed(() => apps.value.filter(a => ['fora', 'atencao'].in
 const nomeApp = id => apps.value.find(a => a.id === id)?.nome || '—'
 const hora = d => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 const dia = d => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+
+// Feed: sistemas em ordem de prioridade (fora do ar, atenção, no ar), com filtro rápido por situação.
+const prioridade = { fora: 0, atencao: 1, ok: 2 }
+const feedTodos = computed(() => apps.value
+  .map(app => {
+    const s = situacao(app.slug)
+    return { app, situacao: s, grupo: s === 'fora' || s === 'atencao' ? s : 'ok', detalhe: saude.porSlug[app.slug]?.detalhe || app.area }
+  })
+  .sort((a, b) => prioridade[a.grupo] - prioridade[b.grupo] || a.app.nome.localeCompare(b.app.nome, 'pt-BR')))
+const filtroFeed = ref('todos')
+const filtrosFeed = computed(() => {
+  const conta = g => feedTodos.value.filter(x => x.grupo === g).length
+  return [
+    { id: 'todos', rotulo: 'Todos', total: feedTodos.value.length + avisos.value.length },
+    { id: 'fora', rotulo: 'Fora', total: conta('fora') },
+    { id: 'atencao', rotulo: 'Atenção', total: conta('atencao') },
+    { id: 'ok', rotulo: 'No ar', total: conta('ok') },
+  ]
+})
+const feedApps = computed(() => filtroFeed.value === 'todos' ? feedTodos.value : feedTodos.value.filter(x => x.grupo === filtroFeed.value))
+
+// Degradê no fim do feed enquanto ainda houver itens abaixo.
+const feedEl = ref(null), feedTemMais = ref(false)
+function medirFeed() {
+  const el = feedEl.value
+  feedTemMais.value = !!el && el.scrollHeight - el.scrollTop - el.clientHeight > 4
+}
+watch([feedApps, avisos, filtroFeed], async () => {
+  await nextTick()
+  if (feedEl.value) feedEl.value.scrollTop = 0
+  medirFeed()
+})
 
 onMounted(async () => {
   ;[apps.value, avisos.value] = await Promise.all([listarAplicacoes(), listarAvisos()])
@@ -46,18 +78,29 @@ async function abrir(app) {
     <div class="area-orb"><NucleoOrb /></div>
 
     <HudPanel titulo="Feed do Núcleo" etiqueta="AO VIVO" class="area-feed" :atraso="120">
-      <ul class="feed">
-        <li v-for="(v, i) in avisos" :key="v.id" :style="{ animationDelay: `${300 + i * 120}ms` }">
-          <span class="ic-quad">✦</span>
-          <span><strong>{{ v.titulo }}</strong><small>{{ v.texto }}</small></span>
-          <em class="tag">{{ dia(v.publicado_em) }}</em>
-        </li>
-        <li v-for="(a, i) in apps" :key="a.id" :style="{ animationDelay: `${420 + (avisos.length + i) * 120}ms` }">
-          <span class="ic-quad">▲</span>
-          <span><strong>{{ a.nome }} {{ situacao(a.slug) === 'fora' ? 'fora do ar' : 'disponível' }}</strong><small>{{ saude.porSlug[a.slug]?.detalhe || a.area }}</small></span>
-          <em class="tag" :class="situacao(a.slug) && situacao(a.slug) !== 'ok' ? situacao(a.slug) : 'ok'">{{ situacao(a.slug) ? rotuloSituacao[situacao(a.slug)] : 'ONLINE' }}</em>
-        </li>
-      </ul>
+      <div class="feed-filtros" role="group" aria-label="Filtrar o feed por situação">
+        <button v-for="f in filtrosFeed" :key="f.id" type="button" class="feed-filtro" :class="[f.id, { ativo: filtroFeed === f.id }]"
+          :aria-pressed="filtroFeed === f.id" :title="f.id === 'fora' ? 'Fora do ar' : f.rotulo" @click="filtroFeed = f.id">{{ f.rotulo }}<b>{{ f.total }}</b></button>
+      </div>
+      <div class="feed-rolagem" :class="{ 'tem-mais': feedTemMais }" ref="feedEl" @scroll.passive="medirFeed">
+        <ul class="feed">
+          <template v-if="filtroFeed === 'todos'">
+            <li v-for="(v, i) in avisos" :key="v.id" :style="{ animationDelay: `${300 + i * 120}ms` }">
+              <span class="ic-quad">✦</span>
+              <span><strong :title="v.titulo">{{ v.titulo }}</strong><small :title="v.texto">{{ v.texto }}</small></span>
+              <em class="tag">{{ dia(v.publicado_em) }}</em>
+            </li>
+          </template>
+          <li v-for="(item, i) in feedApps" :key="item.app.id" :style="{ animationDelay: `${420 + Math.min(i, 8) * 120}ms` }">
+            <span class="ic-quad" :class="item.grupo">▲</span>
+            <span><strong :title="item.app.nome">{{ item.app.nome }}</strong><small :title="item.detalhe">{{ item.detalhe }}</small></span>
+            <em class="tag" :class="item.grupo">{{ item.situacao ? rotuloSituacao[item.situacao] : 'ONLINE' }}</em>
+          </li>
+          <li v-if="!feedApps.length && !(filtroFeed === 'todos' && avisos.length)" class="feed-vazio">
+            {{ filtroFeed === 'todos' ? 'Nada no feed ainda.' : 'Nenhum sistema nesta situação.' }}
+          </li>
+        </ul>
+      </div>
     </HudPanel>
 
     <HudPanel titulo="Aplicações ativas" class="area-apps" :atraso="200">
