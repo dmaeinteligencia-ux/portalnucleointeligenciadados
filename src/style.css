@@ -164,6 +164,40 @@ p { line-height: 1.45; }
 .feed { grid-template-columns: minmax(0, 1fr); }
 .feed li { min-width: 0; }
 .feed li > span:nth-child(2) { min-width: 0; flex: 1; }
+/* Feed do Núcleo: altura fixa (~6 itens) com rolagem interna, filtro por situação e degradê no fim */
+.area-feed { display: flex; flex-direction: column; }
+.feed strong { line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed small { line-height: 1.25; }
+.feed-filtros { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: .3rem; margin: -.2rem 0 .75rem; }
+.feed-filtro {
+  display: inline-flex; align-items: center; gap: .3rem; padding: .22rem .4rem; cursor: pointer; font-family: var(--fonte-hud); font-size: .52rem;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--suave); background: rgba(56, 214, 255, 0.03); border: 1px solid var(--borda); border-radius: 4px;
+  transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
+}
+.feed-filtro { white-space: nowrap; justify-content: center; }
+.feed-filtro b { font-weight: 700; color: var(--texto); }
+.feed-filtro:hover { color: var(--ciano-claro); border-color: var(--borda-forte); }
+.feed-filtro:focus-visible { outline: 1px solid var(--ciano); outline-offset: 2px; }
+.feed-filtro.ativo { color: var(--ciano-claro); border-color: var(--ciano); background: rgba(56, 214, 255, 0.12); box-shadow: 0 0 10px rgba(56, 214, 255, 0.25); }
+.feed-filtro.fora b { color: var(--vermelho); } .feed-filtro.atencao b { color: var(--amarelo); } .feed-filtro.ok b { color: var(--verde); }
+.feed-filtro.fora.ativo { border-color: var(--vermelho); background: rgba(255, 107, 125, 0.1); box-shadow: 0 0 10px rgba(255, 107, 125, 0.25); }
+.feed-filtro.atencao.ativo { border-color: var(--amarelo); background: rgba(255, 201, 77, 0.1); box-shadow: 0 0 10px rgba(255, 201, 77, 0.22); }
+.feed-filtro.ok.ativo { border-color: var(--verde); background: rgba(52, 245, 164, 0.08); box-shadow: 0 0 10px rgba(52, 245, 164, 0.2); }
+.feed-rolagem {
+  /* 6 itens: 2 linhas de texto + respiro de cada item, mais os 5 espaços entre eles */
+  --item: calc(2.25rem + 1.1rem + 2px);
+  height: calc(var(--item) * 6 + .55rem * 5);
+  overflow-y: auto; overscroll-behavior: contain; margin-right: -.6rem; padding-right: .6rem;
+  scrollbar-width: thin; scrollbar-color: rgba(56, 214, 255, 0.55) rgba(56, 214, 255, 0.06);
+}
+.feed-rolagem.tem-mais { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 3.2rem), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 3.2rem), transparent); }
+.feed-rolagem::-webkit-scrollbar { width: 6px; }
+.feed-rolagem::-webkit-scrollbar-track { background: rgba(56, 214, 255, 0.05); border-radius: 3px; }
+.feed-rolagem::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--ciano), var(--azul)); border-radius: 3px; box-shadow: 0 0 6px var(--ciano); }
+.feed-rolagem::-webkit-scrollbar-thumb:hover { background: var(--ciano-claro); }
+.feed .ic-quad.fora { color: var(--vermelho); border-color: rgba(255, 107, 125, 0.5); background: rgba(255, 107, 125, 0.08); box-shadow: inset 0 0 10px rgba(255, 107, 125, 0.15); }
+.feed .ic-quad.atencao { color: var(--amarelo); border-color: rgba(255, 201, 77, 0.45); background: rgba(255, 201, 77, 0.07); box-shadow: inset 0 0 10px rgba(255, 201, 77, 0.12); }
+.feed li.feed-vazio { justify-content: center; color: var(--suave); font-size: .88rem; border-style: dashed; }
 .ic-quad { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--ciano); border: 1px solid var(--borda-forte); background: rgba(56, 214, 255, 0.08); box-shadow: inset 0 0 10px rgba(56, 214, 255, 0.15); }
 .tag { margin-left: auto; font-style: normal; font-family: var(--fonte-hud); font-size: .55rem; letter-spacing: .12em; padding: .2rem .45rem; border-radius: 4px; color: var(--ciano); border: 1px solid var(--borda); white-space: nowrap; text-transform: uppercase; }
 .tag.ok { border-color: rgba(52, 245, 164, 0.4); }
@@ -346,6 +380,7 @@ select option { background: var(--fundo-2); }
   .conteudo { padding: 1rem; }
   .painel-central { grid-template-columns: 1fr; grid-template-areas: "orb" "visao" "feed" "apps" "comandos" "monitor" "linha"; }
   .area-orb { min-height: 280px; }
+  .feed-rolagem { height: auto; max-height: calc(var(--item) * 6 + .55rem * 5); }
   .filtros, .campos, .formulario.linha { grid-template-columns: 1fr; }
   .grade-apps { grid-template-columns: 1fr; }
   .ficha { grid-template-columns: 1fr; }
