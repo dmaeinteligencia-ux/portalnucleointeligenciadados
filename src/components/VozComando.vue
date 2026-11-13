@@ -23,6 +23,10 @@ const dica = computed(() => {
   return 'Ligar comandos de voz (Ctrl+Espaço). Fica ligado sozinho nas próximas vezes.'
 })
 const PALAVRA_VISIVEL = PALAVRA.toUpperCase()
+const dicaChave = computed(() => {
+  if (!voz.disponivel) return 'Escuta de comandos indisponível fora da rede do DMAE'
+  return ativo.value ? 'Escuta de comandos ligada. Clique para desligar e liberar o microfone.' : 'Escuta de comandos desligada. Clique para ligar.'
+})
 const esperando = computed(() => voz.estado === 'comando' || direto.value)
 // Fala parcial só aparece quando é com o portal (depois de "Sane"), não para conversa do ambiente
 const parcialVisivel = computed(() => (esperando.value || voz.parcial.toLowerCase().includes(PALAVRA) ? voz.parcial : ''))
@@ -235,6 +239,10 @@ watch(() => router.currentRoute.value.path, (p) => { if (ativo.value && (p === '
     <button class="voz-botao" :title="dica" :aria-label="dica" :aria-pressed="ativo" @click="alternar">
       <span class="voz-anel" aria-hidden="true" />
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-2.07A7 7 0 0 0 19 12h-2Z" /></svg>
+    </button>
+    <button class="voz-chave" role="switch" :aria-checked="ativo" :title="dicaChave" :aria-label="dicaChave" :disabled="voz.estado === 'conectando'" @click="alternar">
+      <span class="voz-chave-trilho" aria-hidden="true"><span class="voz-chave-botao" /></span>
+      <span class="voz-chave-texto">ESCUTA<b>{{ ativo ? 'LIGADA' : 'DESLIGADA' }}</b></span>
     </button>
     <Transition name="balao">
       <div v-if="balaoVisivel" class="voz-balao" role="status" aria-live="polite">
