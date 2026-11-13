@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { listarAplicacoes } from '../lib/dados'
+import { listarAplicacoes, desativada } from '../lib/dados'
 import { saude, carregarSaude, historicoSaude, rotuloBanco } from '../lib/saude'
 import HudPanel from '../components/HudPanel.vue'
 import LuzSaude from '../components/LuzSaude.vue'
@@ -26,7 +26,7 @@ const diaDe = (d) => new Date(d).toLocaleDateString('pt-BR', { timeZone: 'Americ
 const diasEixo = Array.from({ length: DIAS }, (_, i) => diaDe(Date.now() - (DIAS - 1 - i) * 86400000))
 
 const alvos = computed(() => {
-  const lista = [{ slug: 'portal', nome: 'Portal do Núcleo', url: location.origin, supabase_url: SUPABASE_PORTAL, portal: true }, ...apps.value.filter((a) => a.url || a.supabase_url)]
+  const lista = [{ slug: 'portal', nome: 'Portal do Núcleo', url: location.origin, supabase_url: SUPABASE_PORTAL, portal: true }, ...apps.value.filter((a) => (a.url || a.supabase_url) && !desativada(a))]
   return lista.map((alvo) => {
     const h = historico.value.filter((v) => v.slug === alvo.slug)
     const porDia = {}
@@ -48,6 +48,7 @@ const alvos = computed(() => {
 
 // Filtro pelos números do topo: null mostra todos.
 const filtro = ref(null)
+const desativadas = computed(() => apps.value.filter(desativada))
 const alternarFiltro = (s) => (filtro.value = filtro.value === s ? null : s)
 const visiveis = computed(() => (filtro.value ? alvos.value.filter((a) => a.atual?.situacao === filtro.value) : alvos.value))
 
@@ -124,6 +125,7 @@ const rotuloDia = { ok: 'tudo certo', atencao: 'atenção', fora: 'fora do ar' }
     <a class="botao secundario" :href="`${REPO}/issues?q=is%3Aissue+label%3Amonitoramento`" target="_blank" rel="noopener">Alertas</a>
   </div>
 
+  <p v-if="desativadas.length" class="filtro-aviso">Fora do monitoramento (desativados): {{ desativadas.map((a) => a.nome).join(', ') }}. <RouterLink to="/admin" class="botao-link">Reativar na Administração</RouterLink></p>
   <p v-if="filtro" class="filtro-aviso">Mostrando só {{ filtros.find((f) => f.s === filtro).rotulo }} ({{ visiveis.length }}). <button class="botao-link" @click="filtro = null">Mostrar todos</button></p>
 
   <div class="saude-lista">

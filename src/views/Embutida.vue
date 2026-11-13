@@ -59,7 +59,7 @@ const novaAba = () => window.open(app.value.url, '_blank', 'noopener')
     <div class="barra-embutida">
       <button class="voltar-mini" @click="voltar">‹ Voltar</button>
       <span class="icone-app mini" aria-hidden="true">{{ painel ? '◧' : app.nome.charAt(0) }}</span>
-      <span class="embutida-nome"><strong>{{ app.nome }}</strong><small :class="`st st-${app.status}`"><i />{{ painel ? `Painel ${rotuloPlataforma[app.plataforma] || 'de BI'}` : rotuloStatus[app.status] }} · conectado</small></span>
+      <span class="embutida-nome"><strong>{{ app.nome }}</strong><small :class="`st st-${app.status}`"><i />{{ painel ? `Painel ${rotuloPlataforma[app.plataforma] || 'de BI'}` : rotuloStatus[app.status] }} · {{ app.status === 'desativado' ? 'desativado, dados podem estar desatualizados' : 'conectado' }}</small></span>
       <span class="embutida-endereco" :title="app.url">⛨ {{ app.url }}</span>
       <div class="embutida-acoes">
         <RouterLink :to="`/aplicacoes/${app.slug}`" class="comando-mini" title="Detalhes da aplicação" aria-label="Detalhes da aplicação">ⓘ</RouterLink>

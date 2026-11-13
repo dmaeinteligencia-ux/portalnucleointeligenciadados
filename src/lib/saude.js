@@ -14,9 +14,13 @@ export function carregarSaude({ forcar = false } = {}) {
   if (carregando && !forcar) return carregando
   carregando = (async () => {
     let lista = []
-    if (modoDemo) lista = demo.verificacoes.filter((v, i, l) => l.findIndex((x) => x.slug === v.slug) === i)
+    if (modoDemo) {
+      const fora = new Set(demo.aplicacoes.filter((a) => a.status === 'desativado').map((a) => a.slug))
+      lista = demo.verificacoes.filter((v, i, l) => !fora.has(v.slug) && l.findIndex((x) => x.slug === v.slug) === i)
+    }
     else {
       // Se a migração do monitoramento ainda não foi aplicada, o portal só não mostra as luzes.
+      // A view já deixa de fora os itens desativados (migração 0005).
       const { data, error } = await supabase.from('saude_atual').select('*')
       if (!error) lista = data
     }

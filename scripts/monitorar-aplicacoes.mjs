@@ -287,12 +287,22 @@ async function sincronizarIssues(resultados) {
       anotar(`- Alerta fechado para ${alvo.nome}: ${issue.html_url}`)
     }
   }
+  for (const a of desativadas) {
+    const issue = abertas.find((i) => i.title.includes(marcador(a.slug)))
+    if (!issue) continue
+    await github('POST', `/issues/${issue.number}/comments`, { body: `⏸️ ${a.nome} foi desativado no portal e saiu do monitoramento. Alerta encerrado; reative pelo portal (Administração) quando voltar a ser usado.` })
+    await github('PATCH', `/issues/${issue.number}`, { state: 'closed', state_reason: 'not_planned' })
+    anotar(`- Alerta encerrado (desativado): ${a.nome}`)
+  }
 }
 
 // ---------- Execução ----------
-const apps = await portal('GET', 'aplicacoes?select=slug,nome,url,supabase_url,supabase_chave,supabase_tabela,ativo&order=ordem')
+const todas = await portal('GET', 'aplicacoes?select=slug,nome,url,supabase_url,supabase_chave,supabase_tabela,ativo,status&order=ordem')
 const comPBI = PBI.tenant && PBI.cliente && PBI.segredo
-// Painéis ocultos (recém-cadastrados automaticamente, ainda não liberados) não geram alertas
+// Itens com status "desativado" (sem uso no momento) ficam fora do monitoramento e têm o alerta encerrado.
+const desativadas = todas.filter((a) => a.status === 'desativado')
+const apps = todas.filter((a) => a.status !== 'desativado')
+// Painéis ocultos também não geram alertas
 const paineis = apps.filter((a) => a.url && ehPowerBI(a) && a.ativo)
 const alvos = [
   { slug: 'portal', nome: 'Portal do Núcleo', url: PORTAL_URL, supabase_url: SB_URL, proprio: true },
@@ -333,6 +343,7 @@ for (const { alvo, v } of resultados) {
   const banco = v.banco === 'sem' ? '—' : `${v.banco}${v.banco_ms ? ` · ${v.banco_ms} ms` : ''}`
   anotar(`| ${icone[v.situacao]} | ${alvo.nome} | ${site} | ${banco} | ${v.ssl_dias != null ? `${v.ssl_dias} dias` : '—'} | ${v.detalhe || ''} |`)
 }
+if (desativadas.length) anotar(`\n_Desativados (fora do monitoramento): ${desativadas.map((a) => a.nome).join(', ')}._`)
 if (paineis.length && !comPBI) anotar(`\n_${paineis.length} painel(is) do Power BI sem monitoramento: faltam os segredos PBI_TENANT_ID, PBI_CLIENT_ID e PBI_CLIENT_SECRET._`)
 anotar('')
 

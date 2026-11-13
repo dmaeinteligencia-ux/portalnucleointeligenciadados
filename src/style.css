@@ -547,3 +547,14 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .etiqueta, .sem-quebra { white-space: nowrap; }
 .tabela td:first-child { max-width: 0; width: 55%; }
 .link-curto { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Itens desativados (sem uso no momento) */
+.st-desativado, .status-desativado { color: var(--suave); }
+.status-desativado { border-color: rgba(140, 160, 180, 0.35); }
+.cartao-desativado { opacity: .55; filter: saturate(.3); }
+.cartao-desativado:hover, .cartao-desativado:focus-visible { opacity: .85; }
+.secao-desativados { margin-top: 1.6rem; }
+.secao-desativados > summary { cursor: pointer; font-family: var(--fonte-hud); letter-spacing: .12em; text-transform: uppercase; font-size: .8rem; color: var(--suave); margin-bottom: 1rem; }
+.secao-desativados > summary small { text-transform: none; letter-spacing: 0; font-family: inherit; margin-left: .4rem; opacity: .8; }
+.linha-desativada td { opacity: .6; }
+.tabela td .botao-link + .botao-link { margin-left: .8rem; }

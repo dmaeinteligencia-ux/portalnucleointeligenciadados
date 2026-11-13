@@ -3,7 +3,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import {
   listarAplicacoes, salvarAplicacao, listarAutorizados, autorizar, removerAutorizado,
   listarAvisos, salvarAviso, listarAcessos, rotuloStatus, rotuloTipo, rotuloPlataforma,
-  normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI,
+  normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI, desativada, alternarDesativada,
 } from '../lib/dados'
 import { auth } from '../lib/auth'
 import { useRoute } from 'vue-router'
@@ -83,6 +83,12 @@ async function alternarAviso(aviso) {
   await salvarAviso({ id: aviso.id, ativo: !aviso.ativo })
   await carregar()
 }
+async function desativarOuReativar(app) {
+  if (!desativada(app) && !confirm(`Desativar "${app.nome}"? Ele sai do monitoramento e vai para "Desativados" no catálogo. Dá para reativar a qualquer momento.`)) return
+  await alternarDesativada(app)
+  await carregar()
+  avisar(desativada(app) ? `${app.nome} reativado e de volta ao monitoramento.` : `${app.nome} desativado.`)
+}
 const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total: acessos.value.filter(x => x.aplicacao_id === a.id).length })))
 </script>
 
@@ -136,13 +142,16 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
     <table class="tabela">
       <thead><tr><th>Aplicação</th><th>Tipo</th><th>Área</th><th>Status</th><th>Visível</th><th></th></tr></thead>
       <tbody>
-        <tr v-for="app in apps" :key="app.id">
+        <tr v-for="app in apps" :key="app.id" :class="{ 'linha-desativada': desativada(app) }">
           <td><strong>{{ app.nome }}</strong><br /><small class="suave link-curto" :title="app.url">{{ app.url || 'sem link' }}</small></td>
           <td class="sem-quebra">{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || ''}` : 'Sistema' }}</td>
           <td>{{ app.area }}</td>
           <td><span class="etiqueta" :class="`status-${app.status}`">{{ rotuloStatus[app.status] }}</span></td>
           <td>{{ app.ativo ? 'Sim' : 'Não' }}</td>
-          <td><button class="botao-link" @click="editandoApp = { ...app }">Editar</button></td>
+          <td class="sem-quebra">
+            <button class="botao-link" @click="editandoApp = { ...app }">Editar</button>
+            <button class="botao-link" :title="desativada(app) ? 'Volta para a lista e para o monitoramento' : 'Sem uso no momento: sai do monitoramento e dos alertas'" @click="desativarOuReativar(app)">{{ desativada(app) ? 'Reativar' : 'Desativar' }}</button>
+          </td>
         </tr>
       </tbody>
     </table>

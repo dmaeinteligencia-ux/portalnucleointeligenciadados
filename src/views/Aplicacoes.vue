@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { listarAplicacoes, rotuloStatus, rotuloTipo } from '../lib/dados'
+import { listarAplicacoes, rotuloStatus, rotuloTipo, desativada } from '../lib/dados'
 import CartaoApp from '../components/CartaoApp.vue'
 import HudPanel from '../components/HudPanel.vue'
 
@@ -17,7 +17,7 @@ watch(() => route.query.tipo, t => { tipo.value = t || '' })
 onMounted(async () => { apps.value = await listarAplicacoes() })
 
 const areas = computed(() => [...new Set(apps.value.map(a => a.area).filter(Boolean))].sort())
-const filtradas = computed(() => {
+const encontradas = computed(() => {
   const termo = busca.value.trim().toLowerCase()
   return apps.value.filter(a =>
     (!termo || `${a.nome} ${a.descricao} ${a.area}`.toLowerCase().includes(termo)) &&
@@ -25,6 +25,9 @@ const filtradas = computed(() => {
     (!status.value || a.status === status.value) &&
     (!tipo.value || (a.tipo || 'sistema') === tipo.value))
 })
+// Desativados (sem uso no momento) ficam numa seção recolhida no fim, a não ser que o filtro peça por eles.
+const filtradas = computed(() => status.value === 'desativado' ? encontradas.value : encontradas.value.filter(a => !desativada(a)))
+const desativadas = computed(() => status.value === 'desativado' ? [] : encontradas.value.filter(desativada))
 </script>
 
 <template>
@@ -51,5 +54,11 @@ const filtradas = computed(() => {
   <div class="grade-apps colunas">
     <CartaoApp v-for="(app, i) in filtradas" :key="app.id" :app="app" :indice="i" />
   </div>
+  <details v-if="desativadas.length" class="secao-desativados">
+    <summary>Desativados ({{ desativadas.length }}) <small>sem uso no momento, fora do monitoramento</small></summary>
+    <div class="grade-apps colunas">
+      <CartaoApp v-for="(app, i) in desativadas" :key="app.id" :app="app" :indice="i" />
+    </div>
+  </details>
 </div>
 </template>

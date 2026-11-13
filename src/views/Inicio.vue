@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { auth } from '../lib/auth'
-import { listarAplicacoes, listarAvisos, listarAcessos, listarAutorizados, registrarAcesso } from '../lib/dados'
+import { listarAplicacoes, listarAvisos, listarAcessos, listarAutorizados, registrarAcesso, desativada } from '../lib/dados'
 import HudPanel from '../components/HudPanel.vue'
 import NucleoOrb from '../components/NucleoOrb.vue'
 import CartaoApp from '../components/CartaoApp.vue'
@@ -53,7 +53,9 @@ watch([feedApps, avisos, filtroFeed], async () => {
 })
 
 onMounted(async () => {
-  ;[apps.value, avisos.value] = await Promise.all([listarAplicacoes(), listarAvisos()])
+  let todas
+  ;[todas, avisos.value] = await Promise.all([listarAplicacoes(), listarAvisos()])
+  apps.value = todas.filter(a => !desativada(a)) // desativados não entram no feed nem nas contagens
   if (admin) [acessos.value, pessoas.value] = await Promise.all([listarAcessos(), listarAutorizados()])
 })
 
