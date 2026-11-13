@@ -112,4 +112,10 @@ function ajustar(app) {
 // "Publicar na web" gera app.powerbi.com/view?r=..., que qualquer pessoa com o link consegue abrir.
 export const linkPublicoPowerBI = url => /powerbi\.com\/view\?r=/i.test(url || '')
 
-export const rotuloStatus = { producao: 'Em produção', piloto: 'Piloto', desenvolvimento: 'Em desenvolvimento' }
+export const rotuloStatus = { producao: 'Em produção', piloto: 'Piloto', desenvolvimento: 'Em desenvolvimento', desativado: 'Desativado' }
+// Desativado = sem uso no momento: fica no catálogo (seção "Desativados"), fora do monitoramento e dos alertas.
+export const desativada = app => app?.status === 'desativado'
+
+export async function alternarDesativada(app) {
+  await salvarAplicacao({ id: app.id, status: desativada(app) ? 'producao' : 'desativado' })
+}

@@ -5,7 +5,7 @@
 // "aplicacoes", já com o link de inserção segura. Ele entra direto no monitoramento
 // (sem fase de liberação). Um admin pode ocultar pelo painel se não quiser exibir.
 // Painéis já cadastrados (mesmo reportId) não são alterados: nome, área e descrição ficam
-// como o admin deixou. Relatórios automáticos de "métricas de uso" são ignorados.
+// como o admin deixou (inclusive o status "desativado", que nunca é revertido aqui). Relatórios automáticos de "métricas de uso" são ignorados.
 //
 // Variáveis (GitHub Actions → Secrets):
 //   PBI_TENANT_ID, PBI_CLIENT_ID, PBI_CLIENT_SECRET  aplicativo do Entra ID
