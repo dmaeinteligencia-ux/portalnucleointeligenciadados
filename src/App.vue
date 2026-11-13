@@ -37,6 +37,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
         <RouterLink to="/" class="item"><span class="ic">◈</span>Central</RouterLink>
         <RouterLink to="/aplicacoes" class="item" :class="{ desmarcado: emPaineis }"><span class="ic">▦</span>Aplicações</RouterLink>
         <RouterLink :to="{ path: '/aplicacoes', query: { tipo: 'painel' } }" class="item" :class="{ desmarcado: !emPaineis }"><span class="ic">◧</span>Painéis</RouterLink>
+        <RouterLink to="/apresentacao" class="item"><span class="ic">▶</span>Apresentação</RouterLink>
         <RouterLink v-if="auth.usuario.papel === 'admin'" to="/saude" class="item"><span class="ic">♥</span>Saúde</RouterLink>
         <RouterLink v-if="auth.usuario.papel === 'admin'" to="/admin" class="item"><span class="ic">⚙</span>Administração</RouterLink>
       </nav>

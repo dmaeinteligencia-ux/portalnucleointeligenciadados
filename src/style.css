@@ -558,3 +558,36 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .secao-desativados > summary small { text-transform: none; letter-spacing: 0; font-family: inherit; margin-left: .4rem; opacity: .8; }
 .linha-desativada td { opacity: .6; }
 .tabela td .botao-link + .botao-link { margin-left: .8rem; }
+
+/* Modo apresentação (TV) */
+.apres-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 1.2rem; align-items: start; }
+.apres-config { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.apres-config label { display: grid; gap: .4rem; font-size: .9rem; color: var(--suave); }
+.apres-tempo { display: flex; align-items: center; gap: .5rem; color: var(--texto); }
+.apres-tempo input { width: 90px; }
+.apres-iniciar { width: 100%; margin: .4rem 0 .8rem; font-size: 1rem; }
+.apres-lista { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; gap: .4rem; max-height: 52vh; overflow-y: auto; }
+.apres-lista label { display: flex; align-items: center; gap: .7rem; padding: .45rem .6rem; border: 1px solid var(--borda); border-radius: 10px; background: rgba(3, 14, 28, 0.5); cursor: pointer; transition: opacity .2s; }
+.apres-lista label > span:last-child { display: grid; line-height: 1.2; min-width: 0; }
+.apres-lista small { color: var(--suave); }
+.apres-lista input { width: 18px; height: 18px; accent-color: var(--ciano); flex: none; }
+.apres-lista .icone-app { grid-row: auto; width: 32px; height: 32px; font-size: .85rem; flex: none; }
+.apres-lista li.fora label { opacity: .45; }
+.apres-palco { display: none; }
+.apres-palco.ativo { display: block; position: fixed; inset: 0; z-index: 1000; background: var(--fundo); }
+.apres-palco.sem-cursor { cursor: none; }
+.apres-slide { position: absolute; inset: 0; visibility: hidden; opacity: 0; transition: opacity .6s; background: #fff; }
+.apres-slide.visivel { visibility: visible; opacity: 1; z-index: 1; }
+.apres-slide iframe { width: 100%; height: 100%; border: 0; display: block; }
+.apres-zona { position: absolute; left: 0; right: 0; bottom: 0; height: 110px; z-index: 2; }
+.apres-barra-tempo { position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 3; background: rgba(56, 214, 255, 0.12); }
+.apres-barra-tempo i { display: block; height: 100%; background: linear-gradient(90deg, var(--azul), var(--ciano)); box-shadow: 0 0 10px var(--ciano); transition: width .2s linear; }
+.apres-controles { position: absolute; left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: .9rem; padding: .6rem .9rem; border: 1px solid var(--borda-forte); border-radius: 14px; background: rgba(4, 16, 32, 0.9); box-shadow: 0 0 30px rgba(56, 214, 255, 0.25); backdrop-filter: blur(6px); transition: opacity .4s, transform .4s; max-width: calc(100vw - 32px); }
+.apres-controles.oculto { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
+.apres-controles .icone-app { grid-row: auto; width: 38px; height: 38px; flex: none; }
+.apres-controles .embutida-nome strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; display: block; }
+.apres-controles .embutida-nome small { color: var(--suave); }
+@media (max-width: 900px) {
+  .apres-grade, .apres-config { grid-template-columns: 1fr; }
+  .apres-controles { flex-wrap: wrap; justify-content: center; }
+}
