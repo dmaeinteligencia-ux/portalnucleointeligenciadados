@@ -23,6 +23,11 @@ export const demo = {
       tipo: 'painel', plataforma: 'powerbi',
       descricao: 'Painel do Power BI com os principais indicadores do DMAE.',
       url: 'https://app.powerbi.com/reportEmbed?reportId=00000000-0000-0000-0000-000000000000&autoAuth=true',
+      paginas: [
+        { nome: 'ReportSection1', titulo: 'Visão geral', ordem: 0 },
+        { nome: 'ReportSection2', titulo: 'Ligações', ordem: 1 },
+        { nome: 'ReportSection3', titulo: 'Economias', ordem: 2 },
+      ],
       responsavel: 'Núcleo de Inteligência de Dados', restrita: false, ativo: true, ordem: 30,
     },
     {

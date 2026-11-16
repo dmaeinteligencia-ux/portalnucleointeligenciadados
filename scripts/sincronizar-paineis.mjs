@@ -4,7 +4,9 @@
 // foi adicionado (como Colaborador) e cadastra cada relatório novo como painel VISÍVEL na tabela
 // "aplicacoes", já com o link de inserção segura. Ele entra direto no monitoramento
 // (sem fase de liberação). Um admin pode ocultar pelo painel se não quiser exibir.
-// Painéis já cadastrados (mesmo reportId) não são alterados: nome, área e descrição ficam
+// Também guarda a lista de páginas visíveis de cada relatório (coluna "paginas", migração 0006),
+// usada pelo modo apresentação para mostrar uma página de cada vez.
+// Painéis já cadastrados (mesmo reportId) não são alterados (fora a lista de páginas): nome, área e descrição ficam
 // como o admin deixou (inclusive o status "desativado", que nunca é revertido aqui). Relatórios automáticos de "métricas de uso" são ignorados.
 //
 // Variáveis (GitHub Actions → Secrets):
@@ -65,9 +67,31 @@ function idRelatorio(url) {
 }
 const gerarSlug = (n) => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'painel'
 
-const existentes = await supabase('GET', 'aplicacoes?select=slug,url')
+let comPaginas = true
+let existentes
+try { existentes = await supabase('GET', 'aplicacoes?select=id,slug,url,paginas') } catch {
+  comPaginas = false // migração 0006 ainda não aplicada: segue sem guardar páginas
+  existentes = await supabase('GET', 'aplicacoes?select=id,slug,url')
+  anotar('⚠️ Coluna "paginas" não existe ainda (aplicar a migração 0006). As páginas dos painéis não foram lidas.')
+}
 const slugs = new Set(existentes.map((a) => a.slug))
-const jaCadastrados = new Set(existentes.map((a) => idRelatorio(a.url)).filter(Boolean))
+const porRelatorio = new Map(existentes.map((a) => [idRelatorio(a.url), a]).filter(([id]) => id))
+const jaCadastrados = new Set(porRelatorio.keys())
+
+// Páginas visíveis do relatório, na ordem do Power BI (as ocultas, como dicas de ferramenta, ficam de fora)
+async function paginasDo(grupo, relatorio) {
+  try {
+    const lista = (await powerbi(`/groups/${grupo}/reports/${relatorio}/pages`)).value || []
+    return lista
+      .filter((p) => p.visibility !== 1 && p.visibility !== 'HiddenInViewMode')
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((p) => ({ nome: p.name, titulo: p.displayName, ordem: p.order ?? 0 }))
+  } catch (e) {
+    anotar(`- ⚠️ Não consegui ler as páginas de um relatório: ${e.message}`)
+    return null
+  }
+}
+let paginasAtualizadas = 0
 
 const grupos = (await powerbi('/groups?$top=500')).value
 anotar(`Workspaces que o aplicativo enxerga: ${grupos.map((g) => g.name).join(', ') || 'nenhum'}`)
@@ -78,6 +102,15 @@ for (const g of grupos) {
   for (const rel of (await powerbi(`/groups/${g.id}/reports`)).value) {
     const id = rel.id.toLowerCase()
     if (IGNORAR.test(rel.name)) { ignorados++; continue }
+    const paginas = comPaginas ? await paginasDo(g.id, rel.id) : null
+    const existente = porRelatorio.get(id)
+    if (existente) {
+      if (paginas && JSON.stringify(paginas) !== JSON.stringify(existente.paginas)) {
+        if (!SIMULAR) await supabase('PATCH', `aplicacoes?id=eq.${existente.id}`, { paginas })
+        paginasAtualizadas++
+      }
+      continue
+    }
     if (jaCadastrados.has(id)) continue
     let slug = gerarSlug(rel.name), n = 2
     while (slugs.has(slug)) slug = `${gerarSlug(rel.name)}-${n++}`
@@ -88,11 +121,12 @@ for (const g of grupos) {
       area: g.name, descricao: `Painel do Power BI do workspace ${g.name}.`,
       url: `https://app.powerbi.com/reportEmbed?${p}`, ativo: true,
     }
+    if (paginas) dados.paginas = paginas
     if (!SIMULAR) await supabase('POST', 'aplicacoes', dados)
     novos++
     anotar(`- 🆕 ${rel.name} (${g.name}): cadastrado e já visível no portal e no monitoramento`)
   }
 }
 anotar('')
-anotar(`Novos: ${novos}${ignorados ? ` · Ignorados (métricas de uso): ${ignorados}` : ''}`)
+anotar(`Novos: ${novos} · Listas de páginas atualizadas: ${paginasAtualizadas}${ignorados ? ` · Ignorados (métricas de uso): ${ignorados}` : ''}`)
 fim()
