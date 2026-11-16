@@ -229,12 +229,12 @@ onBeforeUnmount(() => {
             <option value="sistema">Só sistemas</option>
           </select>
         </label>
+        <div v-if="temPowerBI" class="login-painel">
+          <span>⛨ {{ loginFeito ? 'Login Microsoft feito. Pode iniciar.' : 'Os painéis do Power BI pedem a conta Microsoft do DMAE. Entre uma vez antes de iniciar.' }}</span>
+          <button class="botao secundario" @click="entrarMicrosoft">{{ loginFeito ? 'Entrar de novo' : 'Entrar com a Microsoft' }}</button>
+        </div>
+        <button class="botao brilho apres-iniciar" :disabled="!totalTelas" @click="iniciar">▶ Iniciar apresentação ({{ totalTelas }} {{ totalTelas === 1 ? 'tela' : 'telas' }})</button>
       </div>
-      <div v-if="temPowerBI" class="login-painel">
-        <span>⛨ {{ loginFeito ? 'Login Microsoft feito. Pode iniciar.' : 'Os painéis do Power BI pedem a conta Microsoft do DMAE. Entre uma vez antes de iniciar.' }}</span>
-        <button class="botao secundario" @click="entrarMicrosoft">{{ loginFeito ? 'Entrar de novo' : 'Entrar com a Microsoft' }}</button>
-      </div>
-      <button class="botao brilho apres-iniciar" :disabled="!totalTelas" @click="iniciar">▶ Iniciar apresentação ({{ totalTelas }} {{ totalTelas === 1 ? 'tela' : 'telas' }})</button>
       <p class="dica-embutida">Atalhos durante a apresentação: espaço pausa, setas voltam e avançam, Esc sai. A lista é atualizada a cada volta completa, então painéis e páginas novas entram sozinhos.</p>
     </HudPanel>
 
