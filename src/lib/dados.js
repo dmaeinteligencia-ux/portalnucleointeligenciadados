@@ -29,6 +29,7 @@ export async function salvarAplicacao(app) {
 }
 
 export async function registrarAcesso(app) {
+  if (auth.usuario?.papel === 'apresentacao') return // a conta da TV não grava nada
   const registro = { email: auth.usuario.email, aplicacao_id: app.id }
   if (modoDemo) demo.acessos.unshift({ ...registro, id: Date.now(), em: new Date().toISOString() })
   else await supabase.from('acessos').insert(registro)
@@ -78,6 +79,7 @@ export async function removerAutorizado(email) {
   await ok(supabase.from('autorizados').delete().eq('email', email))
 }
 
+export const rotuloPapel = { admin: 'Administrador', usuario: 'Usuário', apresentacao: 'Apresentação (só TV)' }
 export const rotuloTipo = { sistema: 'Sistema', painel: 'Painel de BI' }
 export const rotuloPlataforma = { powerbi: 'Power BI', looker: 'Looker Studio', metabase: 'Metabase', outro: 'Outra' }
 

@@ -27,7 +27,22 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
 
 <template>
   <div class="fundo-grade" aria-hidden="true" />
-  <div v-if="auth.usuario" class="moldura">
+  <!-- Conta da TV (perfil Apresentação): sem menu, sem busca, sem voz; só a tela de apresentação -->
+  <div v-if="auth.usuario?.papel === 'apresentacao'" class="moldura-tv">
+    <header class="topo topo-tv">
+      <span class="marca">
+        <span class="marca-icone"><img src="/favicon.svg" alt="" /></span>
+        <span><strong>NÚCLEO</strong><small>Inteligência de Dados</small></span>
+      </span>
+      <Relogio class="topo-relogio" />
+      <div class="operador">
+        <span class="operador-texto"><strong>{{ auth.usuario.nome || auth.usuario.email }}</strong><small>Apresentação · só exibição</small></span>
+        <button class="botao-link" @click="fazerSair">Sair</button>
+      </div>
+    </header>
+    <main class="conteudo"><RouterView /></main>
+  </div>
+  <div v-else-if="auth.usuario" class="moldura">
     <aside class="lateral">
       <RouterLink to="/" class="marca">
         <span class="marca-icone"><img src="/favicon.svg" alt="" /></span>

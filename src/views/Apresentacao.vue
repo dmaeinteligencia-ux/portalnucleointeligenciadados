@@ -15,14 +15,16 @@ const CHAVE = 'nucleo:apresentacao'
 const lerPreferencias = () => { try { return JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { return {} } }
 const pref = lerPreferencias()
 const admin = computed(() => auth.usuario?.papel === 'admin')
+// Conta da TV (perfil Apresentação): só exibe; os ajustes de cada item vêm dos administradores
+const soVer = auth.usuario?.papel === 'apresentacao'
 
 const apps = ref([])
 const carregado = ref(false)
 const tempo = ref(Number(route.query.tempo) || pref.tempo || 10)
 const tipo = ref(route.query.tipo || pref.tipo || '')
 // Ajustes que ainda não chegaram ao banco (sem permissão, sem a migração 0006 ou versão antiga desta tela)
-const pendentes = reactive({ ...(pref.pendentes || {}) })
-for (const id of pref.excluidos || []) pendentes[id] = { ...pendentes[id], fora: true }
+const pendentes = reactive(soVer ? {} : { ...(pref.pendentes || {}) })
+if (!soVer) for (const id of pref.excluidos || []) pendentes[id] = { ...pendentes[id], fora: true }
 const aviso = ref('')
 
 const guardarPreferencias = () => {
@@ -35,6 +37,7 @@ const tempoDe = app => Number(ajustes(app).tempo) || tempo.value
 const paginasDe = app => (Array.isArray(app.paginas) ? app.paginas : [])
 
 async function ajustar(app, mudanca) {
+  if (soVer) return
   const novo = { ...ajustes(app), ...mudanca }
   for (const k of Object.keys(novo)) if (novo[k] === undefined || novo[k] === null || novo[k] === '') delete novo[k]
   pendentes[app.id] = novo
@@ -242,29 +245,30 @@ onBeforeUnmount(() => {
         <li v-for="app in doTipo" :key="app.id" :class="{ fora: ajustes(app).fora }">
           <div class="apres-item">
             <label class="apres-item-nome">
-              <input type="checkbox" :checked="!ajustes(app).fora" @change="ajustar(app, { fora: !ajustes(app).fora || undefined })" />
+              <input type="checkbox" :checked="!ajustes(app).fora" :disabled="soVer" @change="ajustar(app, { fora: !ajustes(app).fora || undefined })" />
               <span class="icone-app mini" aria-hidden="true">{{ app.tipo === 'painel' ? '◧' : app.nome.charAt(0) }}</span>
               <span><strong>{{ app.nome }}</strong><small>{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || 'de BI'}` : 'Sistema' }}{{ paginasDe(app).length > 1 ? ` · ${paginasDe(app).length} páginas` : '' }}{{ app.area ? ` · ${app.area}` : '' }}</small></span>
             </label>
             <label class="apres-item-tempo" :title="`Tempo em cada tela deste item. Vazio usa o padrão (${tempo}s).`">
-              <input type="number" min="5" max="600" step="5" :value="ajustes(app).tempo || ''" :placeholder="String(tempo)" :disabled="ajustes(app).fora" @change="ajustar(app, { tempo: Number($event.target.value) || undefined })" />
+              <input type="number" min="5" max="600" step="5" :value="ajustes(app).tempo || ''" :placeholder="String(tempo)" :disabled="soVer || ajustes(app).fora" @change="ajustar(app, { tempo: Number($event.target.value) || undefined })" />
               <small>s</small>
             </label>
           </div>
           <div v-if="paginasDe(app).length > 1 && !ajustes(app).fora" class="apres-paginas">
-            <select :value="ajustes(app).paginas || 'todas'" aria-label="Páginas a mostrar" @change="ajustar(app, { paginas: $event.target.value === 'todas' ? undefined : $event.target.value })">
+            <select :value="ajustes(app).paginas || 'todas'" :disabled="soVer" aria-label="Páginas a mostrar" @change="ajustar(app, { paginas: $event.target.value === 'todas' ? undefined : $event.target.value })">
               <option value="todas">Mostrar as páginas marcadas ({{ paginasEscolhidas(app).length }})</option>
               <option value="primeira">Só a primeira página</option>
             </select>
             <div v-if="(ajustes(app).paginas || 'todas') === 'todas'" class="apres-paginas-lista">
               <label v-for="p in paginasDe(app)" :key="p.nome" :class="{ fora: (ajustes(app).paginas_fora || []).includes(p.nome) }">
-                <input type="checkbox" :checked="!(ajustes(app).paginas_fora || []).includes(p.nome)" @change="alternarPagina(app, p)" />{{ p.titulo }}
+                <input type="checkbox" :checked="!(ajustes(app).paginas_fora || []).includes(p.nome)" :disabled="soVer" @change="alternarPagina(app, p)" />{{ p.titulo }}
               </label>
             </div>
           </div>
         </li>
       </ul>
-      <p class="dica-embutida">Desmarque o que não deve aparecer na TV, como um sistema que fica em branco dentro do portal. O tempo ao lado de cada item vale para cada tela dele (vazio usa o padrão). Os ajustes ficam salvos no portal e valem em qualquer TV. Itens desativados não entram.</p>
+      <p v-if="soVer" class="dica-embutida">Esta é a conta de apresentação: ela só exibe. Os itens, tempos e páginas são definidos pelos administradores do portal.</p>
+      <p v-else class="dica-embutida">Desmarque o que não deve aparecer na TV, como um sistema que fica em branco dentro do portal. O tempo ao lado de cada item vale para cada tela dele (vazio usa o padrão). Os ajustes ficam salvos no portal e valem em qualquer TV. Itens desativados não entram.</p>
     </HudPanel>
   </div>
 
