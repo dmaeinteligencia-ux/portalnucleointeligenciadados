@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import {
-  listarAplicacoes, salvarAplicacao, listarAutorizados, autorizar, removerAutorizado,
+  listarAplicacoes, salvarAplicacao, listarAutorizados, autorizar, removerAutorizado, rotuloPapel,
   listarAvisos, salvarAviso, listarAcessos, rotuloStatus, rotuloTipo, rotuloPlataforma,
   normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI, desativada, alternarDesativada,
 } from '../lib/dados'
@@ -163,16 +163,17 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
       <label>E-mail<input v-model="novaPessoa.email" type="email" required /></label>
       <label>Nome<input v-model="novaPessoa.nome" /></label>
       <label>Perfil
-        <select v-model="novaPessoa.papel"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select>
+        <select v-model="novaPessoa.papel"><option v-for="(rotulo, chave) in rotuloPapel" :key="chave" :value="chave">{{ rotulo }}</option></select>
       </label>
       <button class="botao">Autorizar</button>
     </form>
+    <p class="dica-embutida">Perfil "Apresentação (só TV)": a conta entra direto no modo apresentação, sem menu nem outras telas, e não consegue alterar nada no portal. Use um e-mail só para a TV.</p>
     <table class="tabela">
       <thead><tr><th>E-mail</th><th>Nome</th><th>Perfil</th><th></th></tr></thead>
       <tbody>
         <tr v-for="p in pessoas" :key="p.email">
           <td>{{ p.email }}</td><td>{{ p.nome || '—' }}</td>
-          <td>{{ p.papel === 'admin' ? 'Administrador' : 'Usuário' }}</td>
+          <td>{{ rotuloPapel[p.papel] || p.papel }}</td>
           <td><button v-if="p.email !== auth.usuario.email" class="botao-link perigo" @click="remover(p.email)">Remover</button></td>
         </tr>
       </tbody>

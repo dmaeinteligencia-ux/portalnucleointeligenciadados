@@ -16,8 +16,12 @@ export const router = createRouter({
   ],
 })
 
+// Perfil "Apresentação" (conta da TV): só a tela de apresentação, nenhuma outra
+const soApresentacao = () => auth.usuario?.papel === 'apresentacao'
+
 router.beforeEach(to => {
   if (!to.meta.publica && !auth.usuario) return '/entrar'
-  if (to.path === '/entrar' && auth.usuario) return '/'
+  if (to.path === '/entrar' && auth.usuario) return soApresentacao() ? '/apresentacao' : '/'
+  if (soApresentacao() && to.path !== '/apresentacao') return '/apresentacao'
   if (to.meta.admin && auth.usuario?.papel !== 'admin') return '/'
 })

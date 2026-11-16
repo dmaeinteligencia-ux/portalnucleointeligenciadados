@@ -109,6 +109,9 @@ p { line-height: 1.45; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-family: var(--fonte-hud); font-size: .75rem; color: var(--ciano-claro); border: 1px solid var(--borda-forte); box-shadow: var(--brilho); background: rgba(56, 214, 255, 0.08); }
 
 .conteudo { padding: 1.5rem; max-width: 1500px; width: 100%; margin: 0 auto; }
+.moldura-tv { position: relative; min-height: 100vh; display: flex; flex-direction: column; }
+.topo-tv .marca { padding: .35rem .6rem; }
+.topo-tv .operador { margin-left: auto; }
 .titulo-tela { font-family: var(--fonte-hud); font-size: 1.35rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ciano-claro); text-shadow: var(--brilho); margin-bottom: 1rem; }
 
 /* Transição entre telas */

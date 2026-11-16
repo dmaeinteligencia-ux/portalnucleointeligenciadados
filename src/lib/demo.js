@@ -4,6 +4,7 @@ export const demo = {
     { email: 'euthiagosilveira@gmail.com', nome: 'Thiago Silveira', papel: 'admin' },
     { email: 'nativowesley@gmail.com', nome: 'Wesley Nativo', papel: 'admin' },
     { email: 'servidor@dmae.exemplo', nome: 'Servidor de exemplo', papel: 'usuario' },
+    { email: 'tv@dmae.exemplo', nome: 'TV da sala', papel: 'apresentacao' },
   ],
   aplicacoes: [
     {
