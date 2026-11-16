@@ -640,3 +640,5 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
   .apres-paginas { margin-left: 0; }
   .apres-controles { flex-wrap: wrap; justify-content: center; }
 }
+.acoes-pessoa { white-space: nowrap; text-align: right; }
+.acoes-pessoa .botao-link + .botao-link { margin-left: 1rem; }

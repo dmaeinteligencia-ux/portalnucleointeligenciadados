@@ -5,7 +5,7 @@ import {
   listarAvisos, salvarAviso, listarAcessos, rotuloStatus, rotuloTipo, rotuloPlataforma,
   normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI, desativada, alternarDesativada,
 } from '../lib/dados'
-import { auth } from '../lib/auth'
+import { auth, enviarConvite } from '../lib/auth'
 import { useRoute } from 'vue-router'
 
 const aba = ref('aplicacoes')
@@ -35,7 +35,7 @@ onMounted(async () => {
 
 const nomeApp = id => apps.value.find(a => a.id === id)?.nome || '—'
 const dataHora = d => new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-const avisar = t => { mensagem.value = t; setTimeout(() => (mensagem.value = ''), 3000) }
+const avisar = (t, ms = 3000) => { mensagem.value = t; setTimeout(() => { if (mensagem.value === t) mensagem.value = '' }, ms) }
 const gerarSlug = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
 function chaveSecreta(chave) {
@@ -63,10 +63,24 @@ async function gravarApp() {
   avisar('Aplicação salva.')
 }
 async function adicionarPessoa() {
+  const email = novaPessoa.email.trim().toLowerCase()
   await autorizar({ ...novaPessoa })
   Object.assign(novaPessoa, { email: '', nome: '', papel: 'usuario' })
   await carregar()
-  avisar('Pessoa autorizada. Ela já pode entrar com o e-mail.')
+  try {
+    await enviarConvite(email)
+    avisar(`Pessoa autorizada. Link de acesso enviado para ${email}.`, 8000)
+  } catch (e) {
+    avisar(`Pessoa autorizada, mas o link não foi enviado. ${e.message} Ela também pode pedir o link na tela de entrada.`, 12000)
+  }
+}
+async function reenviarLink(email) {
+  try {
+    await enviarConvite(email)
+    avisar(`Link de acesso enviado para ${email}. Confira também a caixa de spam.`, 8000)
+  } catch (e) {
+    avisar(e.message, 12000)
+  }
 }
 async function remover(email) {
   if (!confirm(`Remover o acesso de ${email}?`)) return
@@ -167,14 +181,17 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
       </label>
       <button class="botao">Autorizar</button>
     </form>
-    <p class="dica-embutida">Perfil "Apresentação (só TV)": a conta entra direto no modo apresentação, sem menu nem outras telas, e não consegue alterar nada no portal. Use um e-mail só para a TV.</p>
+    <p class="dica-embutida">Ao autorizar, o portal envia o link de acesso para o e-mail (confira o spam). "Enviar link" manda de novo. Perfil "Apresentação (só TV)": a conta entra direto no modo apresentação, sem menu nem outras telas, e não consegue alterar nada no portal. Use um e-mail só para a TV.</p>
     <table class="tabela">
       <thead><tr><th>E-mail</th><th>Nome</th><th>Perfil</th><th></th></tr></thead>
       <tbody>
         <tr v-for="p in pessoas" :key="p.email">
           <td>{{ p.email }}</td><td>{{ p.nome || '—' }}</td>
           <td>{{ rotuloPapel[p.papel] || p.papel }}</td>
-          <td><button v-if="p.email !== auth.usuario.email" class="botao-link perigo" @click="remover(p.email)">Remover</button></td>
+          <td class="acoes-pessoa">
+            <button v-if="p.email !== auth.usuario.email" class="botao-link" title="Envia por e-mail o link de acesso ao portal" @click="reenviarLink(p.email)">Enviar link</button>
+            <button v-if="p.email !== auth.usuario.email" class="botao-link perigo" @click="remover(p.email)">Remover</button>
+          </td>
         </tr>
       </tbody>
     </table>
