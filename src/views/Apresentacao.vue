@@ -1,36 +1,88 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { listarAplicacoes, desativada, rotuloPlataforma } from '../lib/dados'
+import { listarAplicacoes, salvarAplicacao, desativada, rotuloPlataforma } from '../lib/dados'
+import { auth } from '../lib/auth'
 import HudPanel from '../components/HudPanel.vue'
 
 // Modo apresentação: percorre painéis e sistemas visíveis, um de cada vez, em tela cheia (TV, telão).
+// Painéis do Power BI com várias páginas viram uma tela por página (lista lida pela automação diária).
+// Os ajustes de cada item (tempo, fora da rotação, páginas) ficam no banco, coluna "apresentacao",
+// para valer em qualquer TV. Tempo padrão e filtro de tipo ficam no navegador.
 // Endereço aceita ?tempo=15&tipo=painel&auto=1 para deixar a TV já configurada num favorito.
 const route = useRoute()
 const CHAVE = 'nucleo:apresentacao'
 const lerPreferencias = () => { try { return JSON.parse(localStorage.getItem(CHAVE)) || {} } catch { return {} } }
 const pref = lerPreferencias()
+const admin = computed(() => auth.usuario?.papel === 'admin')
 
 const apps = ref([])
 const carregado = ref(false)
 const tempo = ref(Number(route.query.tempo) || pref.tempo || 10)
 const tipo = ref(route.query.tipo || pref.tipo || '')
-const excluidos = ref(new Set(pref.excluidos || []))
+// Ajustes que ainda não chegaram ao banco (sem permissão, sem a migração 0006 ou versão antiga desta tela)
+const pendentes = reactive({ ...(pref.pendentes || {}) })
+for (const id of pref.excluidos || []) pendentes[id] = { ...pendentes[id], fora: true }
+const aviso = ref('')
 
-watch([tempo, tipo, excluidos], () => {
-  try { localStorage.setItem(CHAVE, JSON.stringify({ tempo: tempo.value, tipo: tipo.value, excluidos: [...excluidos.value] })) } catch { /* sem armazenamento */ }
-}, { deep: true })
+const guardarPreferencias = () => {
+  try { localStorage.setItem(CHAVE, JSON.stringify({ tempo: tempo.value, tipo: tipo.value, pendentes })) } catch { /* sem armazenamento */ }
+}
+watch([tempo, tipo, pendentes], guardarPreferencias, { deep: true })
+
+const ajustes = app => ({ ...(app.apresentacao || {}), ...(pendentes[app.id] || {}) })
+const tempoDe = app => Number(ajustes(app).tempo) || tempo.value
+const paginasDe = app => (Array.isArray(app.paginas) ? app.paginas : [])
+
+async function ajustar(app, mudanca) {
+  const novo = { ...ajustes(app), ...mudanca }
+  for (const k of Object.keys(novo)) if (novo[k] === undefined || novo[k] === null || novo[k] === '') delete novo[k]
+  pendentes[app.id] = novo
+  await enviar(app.id)
+}
+
+async function enviar(id) {
+  const app = apps.value.find(a => a.id === id)
+  if (!app || !admin.value) return
+  const apresentacao = ajustes(app)
+  try {
+    await salvarAplicacao({ id, apresentacao })
+    app.apresentacao = apresentacao
+    delete pendentes[id]
+    aviso.value = ''
+  } catch {
+    aviso.value = 'Não consegui salvar no banco (falta aplicar a migração 0006?). Os ajustes ficaram guardados só neste navegador.'
+  }
+}
 
 // Só entram itens visíveis, com endereço e que não estejam desativados
 const disponiveis = computed(() => apps.value.filter(a => a.url && !desativada(a)))
 const doTipo = computed(() => disponiveis.value.filter(a => !tipo.value || (a.tipo || 'sistema') === tipo.value))
-const fila = computed(() => doTipo.value.filter(a => !excluidos.value.has(a.id)))
+const fila = computed(() => doTipo.value.filter(a => !ajustes(a).fora))
 const temPowerBI = computed(() => fila.value.some(a => a.plataforma === 'powerbi'))
 
-function alternar(app) {
-  const s = new Set(excluidos.value)
-  s.has(app.id) ? s.delete(app.id) : s.add(app.id)
-  excluidos.value = s
+// Cada item vira uma ou mais telas (uma por página do painel escolhida)
+function paginasEscolhidas(app) {
+  const lista = paginasDe(app)
+  if (lista.length < 2) return [null]
+  const a = ajustes(app)
+  if (a.paginas === 'primeira') return [lista[0]]
+  const fora = new Set(a.paginas_fora || [])
+  const escolhidas = lista.filter(p => !fora.has(p.nome))
+  return escolhidas.length ? escolhidas : [lista[0]]
+}
+const telas = computed(() => fila.value.flatMap(app => {
+  const paginas = paginasEscolhidas(app)
+  return paginas.map((pagina, i) => ({
+    chave: `${app.id}:${pagina?.nome || ''}`, app, pagina, posicao: i + 1, total: paginas.length, tempo: tempoDe(app),
+  }))
+}))
+const totalTelas = computed(() => telas.value.length)
+
+function alternarPagina(app, pagina) {
+  const fora = new Set(ajustes(app).paginas_fora || [])
+  fora.has(pagina.nome) ? fora.delete(pagina.nome) : fora.add(pagina.nome)
+  ajustar(app, { paginas_fora: [...fora] })
 }
 
 async function carregar() {
@@ -42,7 +94,7 @@ async function carregar() {
 const rodando = ref(false)
 const pausado = ref(false)
 const indice = ref(0)
-const decorrido = ref(0) // ms do item atual
+const decorrido = ref(0) // ms da tela atual
 const prontos = ref(new Set())
 const palco = ref(null)
 const controlesVisiveis = ref(true)
@@ -50,24 +102,27 @@ let relogio = null
 let ultimo = 0
 let ocultar = null
 
-const atual = computed(() => fila.value[indice.value])
-const proximoIndice = computed(() => fila.value.length ? (indice.value + 1) % fila.value.length : 0)
-const progresso = computed(() => Math.min(100, (decorrido.value / (tempo.value * 1000)) * 100))
-const restante = computed(() => Math.max(0, Math.ceil(tempo.value - decorrido.value / 1000)))
-// Só o item atual e o próximo ficam carregados: o próximo vai carregando escondido para não piscar
+const atual = computed(() => telas.value[indice.value])
+const duracao = computed(() => (atual.value?.tempo || tempo.value) * 1000)
+const proximoIndice = computed(() => telas.value.length ? (indice.value + 1) % telas.value.length : 0)
+const progresso = computed(() => Math.min(100, (decorrido.value / duracao.value) * 100))
+const restante = computed(() => Math.max(0, Math.ceil((duracao.value - decorrido.value) / 1000)))
+// Só a tela atual e a próxima ficam carregadas: a próxima vai carregando escondida para não piscar
 const montado = i => rodando.value && (i === indice.value || i === proximoIndice.value)
 
-// Painel na TV: esconde o painel de filtros e a lista de páginas do Power BI
-function enderecoExibicao(app) {
+// Painel na TV: abre na página certa, sem o painel de filtros e a lista de páginas do Power BI
+function enderecoExibicao(tela) {
+  const { app, pagina } = tela
   if (app.plataforma !== 'powerbi' || !/\/reportEmbed\?/i.test(app.url)) return app.url
   const u = new URL(app.url)
   u.searchParams.set('filterPaneEnabled', 'false')
   u.searchParams.set('navContentPaneEnabled', 'false')
+  if (pagina) u.searchParams.set('pageName', pagina.nome)
   return u.toString()
 }
 
 function iniciar() {
-  if (!fila.value.length) return
+  if (!telas.value.length) return
   indice.value = 0
   decorrido.value = 0
   pausado.value = false
@@ -89,26 +144,26 @@ function passo() {
   const agora = performance.now()
   if (!pausado.value) decorrido.value += agora - ultimo
   ultimo = agora
-  if (decorrido.value >= tempo.value * 1000) avancar()
+  if (decorrido.value >= duracao.value) avancar()
 }
 
 async function avancar(direcao = 1) {
-  const n = fila.value.length
+  const n = telas.value.length
   if (!n) return parar()
   const volta = indice.value + direcao >= n
   indice.value = (indice.value + direcao + n) % n
   decorrido.value = 0
-  // A cada volta completa, busca a lista de novo para pegar painéis novos ou desativados
+  // A cada volta completa, busca a lista de novo para pegar painéis novos, páginas novas e ajustes feitos em outro computador
   if (volta && direcao > 0) {
-    const id = atual.value?.id
+    const chave = atual.value?.chave
     await carregar()
-    const novo = fila.value.findIndex(a => a.id === id)
+    const novo = telas.value.findIndex(t => t.chave === chave)
     indice.value = novo >= 0 ? novo : 0
-    if (!fila.value.length) parar()
+    if (!telas.value.length) parar()
   }
 }
 
-const marcarPronto = id => { prontos.value = new Set(prontos.value).add(id) }
+const marcarPronto = chave => { prontos.value = new Set(prontos.value).add(chave) }
 
 function alternarTelaCheia() {
   if (document.fullscreenElement) document.exitFullscreen()
@@ -143,6 +198,8 @@ function entrarMicrosoft() {
 onMounted(async () => {
   window.addEventListener('keydown', teclas)
   await carregar()
+  // Ajustes guardados só no navegador sobem para o banco quando possível
+  for (const id of Object.keys(pendentes)) await enviar(id)
   if (route.query.auto) iniciar()
 })
 onBeforeUnmount(() => {
@@ -159,7 +216,7 @@ onBeforeUnmount(() => {
   <div class="apres-grade">
     <HudPanel titulo="Configuração">
       <div class="apres-config">
-        <label>Tempo em cada item
+        <label>Tempo padrão em cada tela
           <span class="apres-tempo"><input v-model.number="tempo" type="number" min="5" max="600" step="5" /> segundos</span>
         </label>
         <label>O que mostrar
@@ -174,31 +231,49 @@ onBeforeUnmount(() => {
         <span>⛨ {{ loginFeito ? 'Login Microsoft feito. Pode iniciar.' : 'Os painéis do Power BI pedem a conta Microsoft do DMAE. Entre uma vez antes de iniciar.' }}</span>
         <button class="botao secundario" @click="entrarMicrosoft">{{ loginFeito ? 'Entrar de novo' : 'Entrar com a Microsoft' }}</button>
       </div>
-      <button class="botao brilho apres-iniciar" :disabled="!fila.length" @click="iniciar">▶ Iniciar apresentação ({{ fila.length }} {{ fila.length === 1 ? 'item' : 'itens' }})</button>
-      <p class="dica-embutida">Atalhos durante a apresentação: espaço pausa, setas voltam e avançam, Esc sai. A lista é atualizada a cada volta completa, então painéis novos entram sozinhos.</p>
+      <button class="botao brilho apres-iniciar" :disabled="!totalTelas" @click="iniciar">▶ Iniciar apresentação ({{ totalTelas }} {{ totalTelas === 1 ? 'tela' : 'telas' }})</button>
+      <p class="dica-embutida">Atalhos durante a apresentação: espaço pausa, setas voltam e avançam, Esc sai. A lista é atualizada a cada volta completa, então painéis e páginas novas entram sozinhos.</p>
     </HudPanel>
 
     <HudPanel titulo="Itens na rotação" :etiqueta="`${fila.length} de ${doTipo.length}`">
+      <p v-if="aviso" class="filtro-aviso">{{ aviso }}</p>
       <p v-if="carregado && !doTipo.length" class="suave">Nenhum item visível com endereço cadastrado.</p>
       <ul class="apres-lista">
-        <li v-for="app in doTipo" :key="app.id" :class="{ fora: excluidos.has(app.id) }">
-          <label>
-            <input type="checkbox" :checked="!excluidos.has(app.id)" @change="alternar(app)" />
-            <span class="icone-app mini" aria-hidden="true">{{ app.tipo === 'painel' ? '◧' : app.nome.charAt(0) }}</span>
-            <span><strong>{{ app.nome }}</strong><small>{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || 'de BI'}` : 'Sistema' }}{{ app.area ? ` · ${app.area}` : '' }}</small></span>
-          </label>
+        <li v-for="app in doTipo" :key="app.id" :class="{ fora: ajustes(app).fora }">
+          <div class="apres-item">
+            <label class="apres-item-nome">
+              <input type="checkbox" :checked="!ajustes(app).fora" @change="ajustar(app, { fora: !ajustes(app).fora || undefined })" />
+              <span class="icone-app mini" aria-hidden="true">{{ app.tipo === 'painel' ? '◧' : app.nome.charAt(0) }}</span>
+              <span><strong>{{ app.nome }}</strong><small>{{ app.tipo === 'painel' ? `Painel ${rotuloPlataforma[app.plataforma] || 'de BI'}` : 'Sistema' }}{{ paginasDe(app).length > 1 ? ` · ${paginasDe(app).length} páginas` : '' }}{{ app.area ? ` · ${app.area}` : '' }}</small></span>
+            </label>
+            <label class="apres-item-tempo" :title="`Tempo em cada tela deste item. Vazio usa o padrão (${tempo}s).`">
+              <input type="number" min="5" max="600" step="5" :value="ajustes(app).tempo || ''" :placeholder="String(tempo)" :disabled="ajustes(app).fora" @change="ajustar(app, { tempo: Number($event.target.value) || undefined })" />
+              <small>s</small>
+            </label>
+          </div>
+          <div v-if="paginasDe(app).length > 1 && !ajustes(app).fora" class="apres-paginas">
+            <select :value="ajustes(app).paginas || 'todas'" aria-label="Páginas a mostrar" @change="ajustar(app, { paginas: $event.target.value === 'todas' ? undefined : $event.target.value })">
+              <option value="todas">Mostrar as páginas marcadas ({{ paginasEscolhidas(app).length }})</option>
+              <option value="primeira">Só a primeira página</option>
+            </select>
+            <div v-if="(ajustes(app).paginas || 'todas') === 'todas'" class="apres-paginas-lista">
+              <label v-for="p in paginasDe(app)" :key="p.nome" :class="{ fora: (ajustes(app).paginas_fora || []).includes(p.nome) }">
+                <input type="checkbox" :checked="!(ajustes(app).paginas_fora || []).includes(p.nome)" @change="alternarPagina(app, p)" />{{ p.titulo }}
+              </label>
+            </div>
+          </div>
         </li>
       </ul>
-      <p class="dica-embutida">Desmarque o que não deve aparecer na TV, como um sistema que fica em branco dentro do portal. A escolha fica guardada neste navegador. Itens desativados não entram.</p>
+      <p class="dica-embutida">Desmarque o que não deve aparecer na TV, como um sistema que fica em branco dentro do portal. O tempo ao lado de cada item vale para cada tela dele (vazio usa o padrão). Os ajustes ficam salvos no portal e valem em qualquer TV. Itens desativados não entram.</p>
     </HudPanel>
   </div>
 
   <div ref="palco" class="apres-palco" :class="{ ativo: rodando, 'sem-cursor': rodando && !controlesVisiveis }" @mousemove="mexeu" @click="mexeu">
     <template v-if="rodando">
-      <div v-for="(app, i) in fila" :key="app.id" class="apres-slide" :class="{ visivel: i === indice }">
+      <div v-for="(tela, i) in telas" :key="tela.chave" class="apres-slide" :class="{ visivel: i === indice }">
         <template v-if="montado(i)">
-          <div v-if="!prontos.has(app.id)" class="carregando-app"><span class="anel-carga" /><small>Conectando à {{ app.nome }}…</small></div>
-          <iframe :src="enderecoExibicao(app)" :title="app.nome" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin" @load="marcarPronto(app.id)" />
+          <div v-if="!prontos.has(tela.chave)" class="carregando-app"><span class="anel-carga" /><small>Conectando à {{ tela.app.nome }}…</small></div>
+          <iframe :src="enderecoExibicao(tela)" :title="tela.app.nome" allow="fullscreen" referrerpolicy="strict-origin-when-cross-origin" @load="marcarPronto(tela.chave)" />
         </template>
       </div>
 
@@ -206,8 +281,11 @@ onBeforeUnmount(() => {
       <div class="apres-zona" @mousemove="mexeu" @click="mexeu" />
       <div class="apres-barra-tempo"><i :style="{ width: `${progresso}%` }" /></div>
       <div class="apres-controles" :class="{ oculto: !controlesVisiveis }">
-        <span class="icone-app mini" aria-hidden="true">{{ atual?.tipo === 'painel' ? '◧' : atual?.nome.charAt(0) }}</span>
-        <span class="embutida-nome"><strong>{{ atual?.nome }}</strong><small>{{ indice + 1 }} de {{ fila.length }} · {{ pausado ? 'pausado' : `próximo em ${restante}s` }}</small></span>
+        <span class="icone-app mini" aria-hidden="true">{{ atual?.app.tipo === 'painel' ? '◧' : atual?.app.nome.charAt(0) }}</span>
+        <span class="embutida-nome">
+          <strong>{{ atual?.app.nome }}<template v-if="atual?.pagina"> · {{ atual.pagina.titulo }}</template></strong>
+          <small><template v-if="atual?.total > 1">página {{ atual.posicao }} de {{ atual.total }} · </template>tela {{ indice + 1 }} de {{ totalTelas }} · {{ pausado ? 'pausado' : `próxima em ${restante}s` }}</small>
+        </span>
         <div class="embutida-acoes">
           <button class="comando-mini" title="Anterior (←)" @click.stop="avancar(-1)">⏮</button>
           <button class="comando-mini" :title="pausado ? 'Continuar (espaço)' : 'Pausar (espaço)'" @click.stop="pausado = !pausado">{{ pausado ? '▶' : '⏸' }}</button>
