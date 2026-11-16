@@ -587,13 +587,17 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .tabela td .botao-link + .botao-link { margin-left: .8rem; }
 
 /* Modo apresentação (TV) */
-.apres-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 1.2rem; align-items: start; }
-.apres-config { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.apres-grade { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; }
+.apres-config { display: grid; grid-template-columns: auto minmax(200px, 260px) minmax(0, 1fr) auto; gap: 1rem; align-items: end; margin-bottom: .8rem; }
+.apres-config .login-painel { margin: 0; flex-wrap: nowrap; padding: 6px 6px 6px 14px; grid-column: 1 / -1; grid-row: 2; }
+.apres-config .login-painel .botao { flex: none; white-space: nowrap; padding: .6rem 1rem; }
+.apres-config .login-painel span { min-width: 0; }
+.apres-config .apres-iniciar { grid-column: -2; grid-row: 1; }
 .apres-config label { display: grid; gap: .4rem; font-size: .9rem; color: var(--suave); }
 .apres-tempo { display: flex; align-items: center; gap: .5rem; color: var(--texto); }
 .apres-tempo input { width: 90px; }
-.apres-iniciar { width: 100%; margin: .4rem 0 .8rem; font-size: 1rem; }
-.apres-lista { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; gap: .4rem; max-height: 52vh; overflow-y: auto; }
+.apres-iniciar { font-size: 1rem; white-space: nowrap; }
+.apres-lista { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; gap: .4rem; }
 .apres-lista li { padding: .45rem .6rem; border: 1px solid var(--borda); border-radius: 10px; background: rgba(3, 14, 28, 0.5); transition: opacity .2s; }
 .apres-lista li.fora { opacity: .5; }
 .apres-item { display: flex; align-items: center; gap: .7rem; }
@@ -605,7 +609,7 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .apres-item-tempo { display: flex; align-items: center; gap: .3rem; flex: none; }
 .apres-item-tempo input { width: 72px; padding: .35rem .5rem; }
 .apres-paginas { margin: .5rem 0 .1rem calc(18px + 32px + 1.4rem); display: grid; gap: .45rem; }
-.apres-paginas select { padding: .35rem .5rem; font-size: .9rem; }
+.apres-paginas select { padding: .35rem .5rem; font-size: .9rem; max-width: 420px; }
 .apres-paginas-lista { display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
 .apres-paginas-lista label { display: flex; align-items: center; gap: .35rem; font-size: .9rem; cursor: pointer; }
 .apres-paginas-lista label.fora { opacity: .5; text-decoration: line-through; }
@@ -624,6 +628,13 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .apres-controles .icone-app { grid-row: auto; width: 38px; height: 38px; flex: none; }
 .apres-controles .embutida-nome strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; display: block; }
 .apres-controles .embutida-nome small { color: var(--suave); }
+@media (max-width: 1200px) {
+  .apres-config { grid-template-columns: auto minmax(200px, 1fr); }
+  .apres-config .login-painel, .apres-config .apres-iniciar { grid-column: 1 / -1; grid-row: auto; }
+}
+@media (max-width: 700px) {
+  .apres-config .login-painel { flex-wrap: wrap; }
+}
 @media (max-width: 900px) {
   .apres-grade, .apres-config { grid-template-columns: 1fr; }
   .apres-paginas { margin-left: 0; }
