@@ -55,6 +55,22 @@ export async function entrar(email) {
   return { entrouDireto: false }
 }
 
+// Admin envia o link de acesso para outra pessoa (convite). Não mexe na sessão de quem envia:
+// o link é aberto no aparelho de quem recebe (ex.: a TV) e entra direto no portal.
+export async function enviarConvite(email) {
+  email = email.trim().toLowerCase()
+  if (modoDemo) return
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin, shouldCreateUser: true },
+  })
+  if (error) {
+    throw new Error(error.status === 429 || /rate limit/i.test(error.message)
+      ? 'O Supabase limitou o envio de e-mails por enquanto. Tente de novo em alguns minutos.'
+      : `Não consegui enviar o link: ${error.message}`)
+  }
+}
+
 export async function sair() {
   if (modoDemo) sessionStorage.removeItem('demo-email')
   else await supabase.auth.signOut()
