@@ -28,6 +28,30 @@ export async function salvarAplicacao(app) {
   else await ok(supabase.from('aplicacoes').insert(campos))
 }
 
+// Listas de apresentação (TV): conjuntos nomeados de itens, na ordem de exibição, com ajustes próprios
+export async function listarListas() {
+  if (modoDemo) return [...(demo.listas || [])].sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
+  return ok(supabase.from('listas_apresentacao').select('*').order('ordem').order('nome'))
+}
+
+export async function salvarLista(lista) {
+  if (modoDemo) {
+    demo.listas = demo.listas || []
+    if (lista.id) { Object.assign(demo.listas.find(l => l.id === lista.id), lista); return lista }
+    const nova = { ordem: 100, itens: [], ...lista, id: crypto.randomUUID() }
+    demo.listas.push(nova)
+    return nova
+  }
+  const { id, criado_em, ...campos } = lista
+  if (id) return ok(supabase.from('listas_apresentacao').update(campos).eq('id', id).select().single())
+  return ok(supabase.from('listas_apresentacao').insert(campos).select().single())
+}
+
+export async function excluirLista(id) {
+  if (modoDemo) { demo.listas = (demo.listas || []).filter(l => l.id !== id); return }
+  await ok(supabase.from('listas_apresentacao').delete().eq('id', id))
+}
+
 export async function registrarAcesso(app) {
   if (auth.usuario?.papel === 'apresentacao') return // a conta da TV não grava nada
   const registro = { email: auth.usuario.email, aplicacao_id: app.id }
