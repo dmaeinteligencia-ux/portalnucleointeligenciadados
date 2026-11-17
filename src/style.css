@@ -611,6 +611,12 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .apres-paginas { margin: .5rem 0 .1rem calc(18px + 32px + 1.4rem); display: grid; gap: .45rem; }
 .apres-paginas select { padding: .35rem .5rem; font-size: .9rem; max-width: 420px; }
 .apres-paginas-lista { display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
+.apres-pagina { display: flex; align-items: center; gap: .6rem; }
+.apres-pagina.fora label { opacity: .5; text-decoration: line-through; }
+.apres-paginas-lista.com-tempo { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .35rem 1.2rem; }
+.apres-paginas-lista.com-tempo .apres-pagina { justify-content: space-between; padding: .2rem .4rem; border-bottom: 1px dashed var(--borda); }
+.apres-por-pagina { display: flex; align-items: center; gap: .4rem; font-size: .9rem; color: var(--suave); cursor: pointer; width: fit-content; }
+.apres-por-pagina input { width: 15px; height: 15px; }
 .apres-paginas-lista label { display: flex; align-items: center; gap: .35rem; font-size: .9rem; cursor: pointer; }
 .apres-paginas-lista label.fora { opacity: .5; text-decoration: line-through; }
 .apres-paginas-lista input[type="checkbox"] { width: 15px; height: 15px; }

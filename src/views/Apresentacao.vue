@@ -79,6 +79,16 @@ const indisponiveis = computed(() => lista.value ? (lista.value.itens || []).len
 const fila = computed(() => itens.value.filter(i => !i.cfg.fora))
 const temPowerBI = computed(() => fila.value.some(i => i.app.plataforma === 'powerbi'))
 const tempoDe = item => Number(item.cfg.tempo) || tempoPadrao.value
+// Tempo por página (opcional, ligado em cada painel): a página com tempo próprio usa o dela; as outras, o do item
+const porPagina = cfg => !!cfg.tempo_por_pagina && cfg.paginas !== 'primeira'
+const tempoPagina = (item, pagina) => (pagina && porPagina(item.cfg) && Number(item.cfg.tempos_paginas?.[pagina.nome])) || tempoDe(item)
+function mudarTempoPagina(item, pagina, valor) {
+  const tempos = { ...(item.cfg.tempos_paginas || {}) }
+  const v = Number(valor)
+  if (v) tempos[pagina.nome] = Math.min(600, Math.max(5, v))
+  else delete tempos[pagina.nome]
+  ajustarItem(item, { tempos_paginas: Object.keys(tempos).length ? tempos : undefined })
+}
 
 // Cada item vira uma ou mais telas (uma por página do painel escolhida)
 function paginasEscolhidas({ app, cfg }) {
@@ -92,7 +102,7 @@ function paginasEscolhidas({ app, cfg }) {
 const telas = computed(() => fila.value.flatMap((item, n) => {
   const paginas = paginasEscolhidas(item)
   return paginas.map((pagina, i) => ({
-    chave: `${n}:${item.app.id}:${pagina?.nome || ''}`, app: item.app, pagina, posicao: i + 1, total: paginas.length, tempo: tempoDe(item),
+    chave: `${n}:${item.app.id}:${pagina?.nome || ''}`, app: item.app, pagina, posicao: i + 1, total: paginas.length, tempo: tempoPagina(item, pagina),
   }))
 }))
 const totalTelas = computed(() => telas.value.length)
@@ -409,10 +419,20 @@ onBeforeUnmount(() => {
               <option value="todas">Mostrar as páginas marcadas ({{ paginasEscolhidas(item).length }})</option>
               <option value="primeira">Só a primeira página</option>
             </select>
-            <div v-if="(item.cfg.paginas || 'todas') === 'todas'" class="apres-paginas-lista">
-              <label v-for="p in paginasDe(item.app)" :key="p.nome" :class="{ fora: (item.cfg.paginas_fora || []).includes(p.nome) }">
-                <input type="checkbox" :checked="!(item.cfg.paginas_fora || []).includes(p.nome)" :disabled="soVer || (lista && !admin)" @change="alternarPagina(item, p)" />{{ p.titulo }}
-              </label>
+            <label v-if="(item.cfg.paginas || 'todas') === 'todas'" class="apres-por-pagina">
+              <input type="checkbox" :checked="!!item.cfg.tempo_por_pagina" :disabled="soVer || (lista && !admin)" @change="ajustarItem(item, { tempo_por_pagina: $event.target.checked || undefined })" />
+              Tempo diferente em cada página
+            </label>
+            <div v-if="(item.cfg.paginas || 'todas') === 'todas'" class="apres-paginas-lista" :class="{ 'com-tempo': porPagina(item.cfg) }">
+              <div v-for="p in paginasDe(item.app)" :key="p.nome" class="apres-pagina" :class="{ fora: (item.cfg.paginas_fora || []).includes(p.nome) }">
+                <label>
+                  <input type="checkbox" :checked="!(item.cfg.paginas_fora || []).includes(p.nome)" :disabled="soVer || (lista && !admin)" @change="alternarPagina(item, p)" />{{ p.titulo }}
+                </label>
+                <span v-if="porPagina(item.cfg)" class="apres-item-tempo" :title="`Tempo desta página. Vazio usa o tempo do item (${tempoDe(item)}s).`">
+                  <input type="number" min="5" max="600" step="5" :value="item.cfg.tempos_paginas?.[p.nome] || ''" :placeholder="String(tempoDe(item))" :disabled="soVer || (lista && !admin) || (item.cfg.paginas_fora || []).includes(p.nome)" :aria-label="`Tempo da página ${p.titulo}`" @change="mudarTempoPagina(item, p, $event.target.value)" />
+                  <small>s</small>
+                </span>
+              </div>
             </div>
           </div>
         </li>
