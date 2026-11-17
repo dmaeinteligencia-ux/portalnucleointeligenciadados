@@ -642,3 +642,9 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 }
 .acoes-pessoa { white-space: nowrap; text-align: right; }
 .acoes-pessoa .botao-link + .botao-link { margin-left: 1rem; }
+.senha-fundo { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgba(1, 6, 14, 0.75); backdrop-filter: blur(4px); }
+.senha-caixa { width: 100%; max-width: 400px; display: grid; gap: .7rem; padding: 1.5rem; }
+.senha-caixa h2 { font-family: var(--fonte-hud); font-size: 1rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ciano-claro); }
+.senha-caixa label { display: grid; gap: .3rem; font-size: .85rem; color: var(--suave); }
+.senha-acoes { display: flex; gap: .6rem; justify-content: flex-end; }
+.entrar-alternar { margin-top: .8rem; }

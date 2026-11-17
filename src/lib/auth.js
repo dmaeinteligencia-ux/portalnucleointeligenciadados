@@ -55,6 +55,42 @@ export async function entrar(email) {
   return { entrouDireto: false }
 }
 
+// Entrar com e-mail e senha (a senha é criada pela própria pessoa em "Minha senha", depois de entrar pelo link)
+export async function entrarComSenha(email, senha) {
+  email = email.trim().toLowerCase()
+  if (modoDemo) {
+    const perfil = await carregarPerfil(email)
+    if (!perfil) throw new Error('E-mail ou senha incorretos.')
+    sessionStorage.setItem('demo-email', email)
+    auth.usuario = perfil
+    return
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
+  if (error) {
+    throw new Error(/invalid login credentials/i.test(error.message)
+      ? 'E-mail ou senha incorretos. Se ainda não criou sua senha, entre pelo link por e-mail e crie em "Minha senha".'
+      : /email not confirmed/i.test(error.message)
+        ? 'Este e-mail ainda não foi confirmado. Entre uma vez pelo link por e-mail.'
+        : `Não foi possível entrar: ${error.message}`)
+  }
+  // Já carrega o perfil aqui para a navegação seguinte saber o papel (admin, usuário ou apresentação)
+  auth.usuario = await carregarPerfil(data.user?.email)
+  if (!auth.usuario) { await supabase.auth.signOut(); throw new Error('Este e-mail não está autorizado no portal.') }
+}
+
+// Cria ou troca a senha da conta logada
+export async function definirSenha(senha) {
+  if (modoDemo) return
+  const { error } = await supabase.auth.updateUser({ password: senha })
+  if (error) {
+    throw new Error(/should be different/i.test(error.message)
+      ? 'A nova senha precisa ser diferente da atual.'
+      : /weak|at least/i.test(error.message)
+        ? 'Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.'
+        : `Não consegui salvar a senha: ${error.message}`)
+  }
+}
+
 // Admin envia o link de acesso para outra pessoa (convite). Não mexe na sessão de quem envia:
 // o link é aberto no aparelho de quem recebe (ex.: a TV) e entra direto no portal.
 export async function enviarConvite(email) {
