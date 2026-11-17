@@ -648,3 +648,24 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 .senha-caixa label { display: grid; gap: .3rem; font-size: .85rem; color: var(--suave); }
 .senha-acoes { display: flex; gap: .6rem; justify-content: flex-end; }
 .entrar-alternar { margin-top: .8rem; }
+
+/* Listas de apresentação */
+.apres-listas { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--borda); }
+.apres-listas label { display: grid; gap: .4rem; font-size: .9rem; color: var(--suave); }
+.apres-listas select { min-width: 260px; }
+.apres-nova { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.apres-nova input { width: 260px; }
+.apres-nome input { width: 240px; }
+.apres-listas .botao { padding: .6rem 1rem; white-space: nowrap; }
+.apres-listas .botao-link { padding-bottom: .7rem; }
+.apres-link { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; font-size: .9rem; color: var(--suave); margin: 0 0 .6rem; }
+.apres-link code { color: var(--texto); word-break: break-all; }
+.apres-posicao { width: 1.6rem; text-align: center; color: var(--ciano); font-weight: 700; flex: none; }
+.apres-ordem { display: flex; gap: .25rem; flex: none; }
+.apres-ordem .comando-mini:disabled { opacity: .3; cursor: default; }
+.apres-adicionar { display: grid; gap: .4rem; font-size: .9rem; color: var(--suave); margin-bottom: .8rem; max-width: 480px; }
+@media (max-width: 640px) {
+  .apres-listas select, .apres-nova input, .apres-nome input { width: 100%; min-width: 0; }
+  .apres-listas > * { flex: 1 1 100%; }
+  .apres-item { flex-wrap: wrap; }
+}
