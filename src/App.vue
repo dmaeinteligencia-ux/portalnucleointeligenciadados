@@ -5,6 +5,7 @@ import { auth, sair } from './lib/auth'
 import { modoDemo } from './lib/supabase'
 import Relogio from './components/Relogio.vue'
 import VozComando from './components/VozComando.vue'
+import MinhaSenha from './components/MinhaSenha.vue'
 import { saude, carregarSaude } from './lib/saude'
 
 const router = useRouter()
@@ -39,6 +40,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
       <Relogio class="topo-relogio" />
       <div class="operador">
         <span class="operador-texto"><strong>{{ auth.usuario.nome || auth.usuario.email }}</strong><small>Apresentação · só exibição</small></span>
+        <MinhaSenha />
         <button class="botao secundario" title="Sai da conta da TV e abre o login para um administrador" @click="entrarComoAdmin">Entrar como administrador</button>
       </div>
     </header>
@@ -79,6 +81,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
         <div class="operador">
           <span class="operador-texto"><strong>{{ auth.usuario.nome || auth.usuario.email }}</strong><small>{{ auth.usuario.papel === 'admin' ? 'Administrador' : 'Usuário' }}</small></span>
           <span class="avatar">{{ iniciais(auth.usuario.nome || auth.usuario.email) }}</span>
+          <MinhaSenha />
           <button class="botao-link" @click="fazerSair">Sair</button>
         </div>
       </header>
