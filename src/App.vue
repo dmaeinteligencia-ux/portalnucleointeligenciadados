@@ -14,6 +14,8 @@ const emPaineis = computed(() => route.path === '/aplicacoes' && route.query.tip
 const busca = ref('')
 const buscar = () => router.push({ path: '/aplicacoes', query: busca.value ? { q: busca.value } : {} })
 const fazerSair = async () => { await sair(); router.push('/entrar') }
+// Na conta da TV: sai dela e abre o login já indicando que é para um administrador
+const entrarComoAdmin = async () => { await sair(); router.push({ path: '/entrar', query: { admin: '1' } }) }
 // Pílula do topo: mostra se o monitoramento achou algum sistema com problema
 watch(() => auth.usuario, (u) => { if (u) carregarSaude() }, { immediate: true })
 const situacaoGeral = computed(() => {
@@ -37,7 +39,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
       <Relogio class="topo-relogio" />
       <div class="operador">
         <span class="operador-texto"><strong>{{ auth.usuario.nome || auth.usuario.email }}</strong><small>Apresentação · só exibição</small></span>
-        <button class="botao-link" @click="fazerSair">Sair</button>
+        <button class="botao secundario" title="Sai da conta da TV e abre o login para um administrador" @click="entrarComoAdmin">Entrar como administrador</button>
       </div>
     </header>
     <main class="conteudo"><RouterView /></main>

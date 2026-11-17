@@ -1,11 +1,12 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { auth, entrar } from '../lib/auth'
 import { modoDemo } from '../lib/supabase'
 import NucleoOrb from '../components/NucleoOrb.vue'
 
 const router = useRouter()
+const paraAdmin = !!useRoute().query.admin
 const email = ref('')
 const enviando = ref(false)
 const erro = ref(auth.erroLink)
@@ -41,13 +42,14 @@ async function enviar() {
       </div>
 
       <form v-else @submit.prevent="enviar">
+        <p v-if="paraAdmin" class="dica">Entrada de administrador: digite o seu e-mail de administrador. O link chega no seu e-mail; abra-o neste aparelho.</p>
         <label for="email">IDENTIFICAÇÃO</label>
         <input id="email" v-model="email" type="email" required autocomplete="email" placeholder="seu.email@exemplo.com" />
         <p v-if="erro" class="erro">⚠ {{ erro }}</p>
         <button class="botao brilho" :disabled="enviando">{{ enviando ? 'VERIFICANDO…' : 'RECEBER LINK DE ACESSO' }}</button>
       </form>
 
-      <p v-if="modoDemo" class="dica">Demonstração: use euthiagosilveira@gmail.com (admin) ou servidor@dmae.exemplo (usuário).</p>
+      <p v-if="modoDemo" class="dica">Demonstração: use euthiagosilveira@gmail.com (admin), servidor@dmae.exemplo (usuário) ou tv@dmae.exemplo (apresentação).</p>
       <p class="suave pequeno">Não tem acesso? Fale com o Núcleo de Inteligência de Dados.</p>
     </div>
   </div>
