@@ -7,6 +7,7 @@ import NucleoOrb from '../components/NucleoOrb.vue'
 import CartaoApp from '../components/CartaoApp.vue'
 import Medidor from '../components/Medidor.vue'
 import { saude, rotuloSituacao } from '../lib/saude'
+import { temaAtivo } from '../lib/temas'
 
 const admin = auth.usuario.papel === 'admin'
 const apps = ref([]), avisos = ref([]), acessos = ref([]), pessoas = ref([])
@@ -77,7 +78,7 @@ async function abrir(app) {
       </ul>
     </HudPanel>
 
-    <div class="area-orb"><NucleoOrb /></div>
+    <div class="area-orb"><NucleoOrb :enfeite="temaAtivo?.id" :saudacao="temaAtivo?.saudacao?.()" /></div>
 
     <HudPanel titulo="Feed do Núcleo" etiqueta="AO VIVO" class="area-feed" :atraso="120">
       <div class="feed-filtros" role="group" aria-label="Filtrar o feed por situação">

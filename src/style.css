@@ -675,3 +675,62 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
   .apres-listas > * { flex: 1 1 100%; }
   .apres-item { flex-wrap: wrap; }
 }
+
+/* ===== Temas sazonais =====
+   Cada tema vale quando <html data-tema="…"> está marcado (ver src/lib/temas.js).
+   Mantém o HUD ciano e acrescenta só enfeites: nada aqui muda o layout. */
+
+/* Natal */
+[data-tema="natal"] {
+  --natal-vermelho: #ff4d63;
+  --natal-dourado: #ffc94d;
+  --natal-verde: #34f5a4;
+}
+[data-tema="natal"] body {
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(255, 201, 77, 0.07), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, rgba(255, 77, 99, 0.06), transparent 65%),
+    radial-gradient(1200px 700px at 55% 30%, rgba(26, 124, 255, 0.16), transparent 60%),
+    radial-gradient(900px 600px at 0% 100%, rgba(56, 214, 255, 0.08), transparent 60%),
+    var(--fundo);
+}
+.neve { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+/* A neve fica acima do fundo e atrás dos painéis (o fundo do body cobriria um z-index negativo) */
+[data-tema="natal"] .moldura > .lateral { z-index: 1; }
+[data-tema="natal"] .moldura > .principal { position: relative; z-index: 1; }
+
+/* Gorro no ícone da marca */
+.gorro-natal { position: absolute; top: -15px; left: -10px; width: 32px; transform: rotate(-22deg); filter: drop-shadow(0 0 5px rgba(255, 77, 99, 0.55)); pointer-events: none; }
+.gorro-corpo { fill: var(--natal-vermelho); }
+.gorro-barra, .gorro-pompom { fill: #f4fbff; }
+
+/* Cordão de luzes na borda de baixo do topo */
+.luzes-natal { position: absolute; left: 0; right: 0; bottom: -15px; height: 20px; pointer-events: none; }
+.luzes-fio { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.luzes-fio path { fill: none; stroke: rgba(165, 240, 255, 0.35); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.luzes-natal i {
+  position: absolute; top: 34%; width: 7px; height: 10px; margin-left: -3.5px; border-radius: 50% 50% 45% 45% / 40% 40% 60% 60%;
+  background: currentColor; box-shadow: 0 0 6px 1px currentColor, 0 0 14px currentColor; animation: piscar-luz 2.4s ease-in-out infinite;
+}
+.luzes-natal i::before { content: ""; position: absolute; top: -3px; left: 1.5px; width: 4px; height: 3px; border-radius: 1px; background: #5d7a96; }
+.luzes-natal i.vermelha { color: var(--natal-vermelho); }
+.luzes-natal i.dourada { color: var(--natal-dourado); }
+.luzes-natal i.verde { color: var(--natal-verde); }
+.luzes-natal i.ciano { color: var(--ciano); }
+@keyframes piscar-luz { 0%, 100% { opacity: 1; } 45% { opacity: .28; box-shadow: 0 0 2px currentColor; } }
+
+/* Cantos dos painéis em dourado e vermelho, alternados */
+[data-tema="natal"] .hud-painel .c1, [data-tema="natal"] .hud-painel .c4 { border-color: var(--natal-dourado); filter: drop-shadow(0 0 4px var(--natal-dourado)); }
+[data-tema="natal"] .hud-painel .c2, [data-tema="natal"] .hud-painel .c3 { border-color: var(--natal-vermelho); filter: drop-shadow(0 0 4px var(--natal-vermelho)); }
+
+/* Saudação sob o NÚCLEO na orbe */
+.orb-texto em.orb-saudacao {
+  margin-top: .55rem; font-family: var(--fonte-hud); font-size: .78rem; font-weight: 700; letter-spacing: .32em; padding-left: .32em;
+  color: var(--natal-dourado, #ffc94d); text-shadow: 0 0 10px rgba(255, 201, 77, 0.65), 0 0 22px rgba(255, 77, 99, 0.35);
+}
+@media (max-width: 860px) {
+  [data-tema="natal"] .topo, [data-tema="natal"] .moldura > .lateral { position: relative; }
+  .luzes-natal i:nth-of-type(even) { display: none; } /* metade das lâmpadas na tela estreita */
+}
+@media (prefers-reduced-motion: reduce) { .luzes-natal i { animation: none !important; } }
+.lista-temas { margin: 0 0 1rem; padding-left: 1.1rem; color: var(--suave); } .lista-temas strong { color: var(--texto); }
