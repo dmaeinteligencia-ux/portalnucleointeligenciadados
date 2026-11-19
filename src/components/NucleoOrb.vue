@@ -1,12 +1,18 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { contagemNatal, corFaixa, tampaEFita } from './temas/desenhoNatal'
 
 const props = defineProps({
   titulo: { type: String, default: 'NÚCLEO' },
   subtitulo: { type: String, default: 'INTELIGÊNCIA DE DADOS' },
   modo: { type: String, default: '' }, // '' | ouvindo | pensando | falando (assistente de voz)
   nivel: { type: Number, default: 0 }, // volume da voz (0 a 1)
+  enfeite: { type: String, default: '' }, // tema sazonal: 'natal' veste a esfera de bola de Natal
 })
+const natal = computed(() => props.enfeite === 'natal')
+const saudacao = computed(() => (natal.value ? contagemNatal() : null))
+// Bolinhas coloridas presas na esfera
+const BOLAS = ['255,77,99', '255,201,77', '56,214,255', '255,120,200', '255,255,255']
 // Cor das linhas e dos pontos em cada modo
 const CORES = {
   '': [[80, 210, 255], [150, 235, 255]],
@@ -39,7 +45,8 @@ onMounted(() => {
       : modo === 'pensando' ? 0.25 + 0.15 * Math.sin(performance.now() / 250) : 0
     pulso += (alvo - pulso) * 0.18
     const [linha, ponto] = CORES[modo] || CORES['']
-    const R = Math.min(w, h) * 0.36 * (1 + pulso * 0.1), cx = w / 2, cy = h / 2
+    const enfeitado = natal.value, agora = performance.now()
+    const R = Math.min(w, h) * (enfeitado ? 0.31 : 0.36) * (1 + pulso * 0.1), cx = w / 2, cy = h / 2 + (enfeitado ? h * 0.04 : 0)
     const brilho = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.25)
     brilho.addColorStop(0, `rgba(${linha.join(',')},${0.28 + pulso * 0.25})`); brilho.addColorStop(0.6, 'rgba(20,120,220,0.10)'); brilho.addColorStop(1, 'rgba(0,0,0,0)')
     ctx.fillStyle = brilho; ctx.beginPath(); ctx.arc(cx, cy, R * 1.25, 0, Math.PI * 2); ctx.fill()
@@ -54,15 +61,26 @@ onMounted(() => {
       const a = proj[i], b = proj[j], dx = a[0] - b[0], dy = a[1] - b[1], d = dx * dx + dy * dy
       if (d < (R * 0.24) ** 2) {
         const prof = (a[2] + b[2] + 2) / 4
-        ctx.strokeStyle = `rgba(${linha.join(',')},${0.05 + prof * (0.35 + pulso * 0.3)})`
+        const cl = enfeitado && !modo ? corFaixa((pontos[i][1] + pontos[j][1]) / 2) : linha
+        ctx.strokeStyle = `rgba(${cl.join(',')},${0.05 + prof * (0.35 + pulso * 0.3)})`
         ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
       }
     }
-    for (const [x, y, z] of proj) {
-      const prof = (z + 1) / 2
-      ctx.fillStyle = `rgba(${ponto.join(',')},${0.25 + prof * 0.75})`
+    for (let i = 0; i < N; i++) {
+      const [x, y, z] = proj[i], prof = (z + 1) / 2
+      if (enfeitado && i % 11 === 4) { // bolinha de Natal com brilho
+        const cor = BOLAS[(i / 11 | 0) % BOLAS.length], r = 2 + prof * 3, b = 0.75 + 0.25 * Math.sin(agora / 400 + i)
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3)
+        g.addColorStop(0, `rgba(${cor},${(0.35 * prof + 0.1) * b})`); g.addColorStop(1, `rgba(${cor},0)`)
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill()
+        ctx.fillStyle = `rgba(${cor},${0.35 + prof * 0.65})`
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
+        continue
+      }
+      ctx.fillStyle = enfeitado && !modo ? `rgba(255,245,225,${0.25 + prof * 0.75})` : `rgba(${ponto.join(',')},${0.25 + prof * 0.75})`
       ctx.beginPath(); ctx.arc(x, y, 0.8 + prof * (1.6 + pulso * 1.2), 0, Math.PI * 2); ctx.fill()
     }
+    if (enfeitado) tampaEFita(ctx, cx, cy - R, R, agora)
     ang += 0.0035 * (modo === 'pensando' ? 6 : modo ? 2 : 1)
     if (!reduzir) quadro = requestAnimationFrame(desenhar)
   }
@@ -74,14 +92,18 @@ onBeforeUnmount(() => { cancelAnimationFrame(quadro); observador?.disconnect() }
 </script>
 
 <template>
-  <div class="orb" :class="modo && `orb-${modo}`">
+  <div class="orb" :class="[modo && `orb-${modo}`, { 'orb-natal': natal }]">
     <span class="anel a1" /><span class="anel a2" /><span class="anel a3" />
     <span class="chao" aria-hidden="true" />
     <canvas ref="tela" aria-hidden="true" />
     <div class="orb-texto">
       <strong>{{ titulo }}</strong>
       <small>{{ subtitulo }}</small>
-      <em>DMAE · v1.0</em>
+      <template v-if="saudacao">
+        <em class="orb-saudacao">✦ {{ saudacao.titulo }} ✦</em>
+        <em class="orb-contagem">{{ saudacao.linha }}</em>
+      </template>
+      <em v-else>DMAE · v1.0</em>
     </div>
   </div>
 </template>

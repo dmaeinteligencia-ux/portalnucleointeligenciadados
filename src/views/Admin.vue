@@ -6,6 +6,7 @@ import {
   normalizarLinkPainel, linkPublicoPowerBI, linkPowerBI, desativada, alternarDesativada,
 } from '../lib/dados'
 import { auth, enviarConvite } from '../lib/auth'
+import { TEMAS, rotuloModoTema, temaConfig, temaAtivo, temaDaData, carregarTema, salvarModoTema } from '../lib/temas'
 import { useRoute } from 'vue-router'
 
 const aba = ref('aplicacoes')
@@ -103,6 +104,15 @@ async function desativarOuReativar(app) {
   await carregar()
   avisar(desativada(app) ? `${app.nome} reativado e de volta ao monitoramento.` : `${app.nome} desativado.`)
 }
+// Tema sazonal
+const modoTema = ref(temaConfig.modo)
+onMounted(async () => { await carregarTema(); modoTema.value = temaConfig.modo })
+async function gravarTema() {
+  try {
+    await salvarModoTema(modoTema.value)
+    avisar(temaAtivo.value ? `Tema de ${temaAtivo.value.nome} ligado para todos.` : 'Nenhum tema sazonal no momento.', 5000)
+  } catch (e) { avisar(e.message, 10000) }
+}
 const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total: acessos.value.filter(x => x.aplicacao_id === a.id).length })))
 </script>
 
@@ -110,7 +120,7 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
 <div>
   <h1 class="titulo-tela">Administração</h1>
   <div class="abas" role="tablist">
-    <button v-for="(rotulo, chave) in { aplicacoes: 'Aplicações', pessoas: 'Usuários autorizados', avisos: 'Avisos', acessos: 'Acessos' }"
+    <button v-for="(rotulo, chave) in { aplicacoes: 'Aplicações', pessoas: 'Usuários autorizados', avisos: 'Avisos', acessos: 'Acessos', tema: 'Tema sazonal' }"
       :key="chave" role="tab" :aria-selected="aba === chave" :class="{ ativa: aba === chave }" @click="aba = chave">{{ rotulo }}</button>
   </div>
   <p v-if="mensagem" class="aviso-ok">{{ mensagem }}</p>
@@ -217,6 +227,27 @@ const acessosPorApp = computed(() => apps.value.map(a => ({ nome: a.nome, total:
         </tr>
       </tbody>
     </table>
+  </section>
+
+  <!-- Tema sazonal -->
+  <section v-if="aba === 'tema'">
+    <form class="hud-painel formulario" @submit.prevent="gravarTema">
+      <h2>Tema sazonal da página principal</h2>
+      <div class="campos">
+        <label>Quando mostrar
+          <select v-model="modoTema"><option v-for="(r, v) in rotuloModoTema" :key="v" :value="v">{{ r }}</option></select>
+        </label>
+      </div>
+      <p class="dica-embutida" style="margin: .8rem 0">
+        No automático, cada tema liga sozinho no seu período e desliga depois.
+        Hoje: {{ temaDaData() ? `período do tema de ${temaDaData().nome}` : 'nenhum tema no período' }}.
+        Vale para todos os usuários do portal, menos a conta da TV, que fica sem enfeites.
+      </p>
+      <ul class="lista-temas">
+        <li v-for="t in TEMAS" :key="t.id"><strong>{{ t.nome }}</strong> · {{ t.periodo }}: neve na Central, luzes no topo, gorro na marca e enfeites na esfera do Núcleo.</li>
+      </ul>
+      <div class="barra"><button class="botao">Salvar</button></div>
+    </form>
   </section>
 
   <!-- Acessos -->

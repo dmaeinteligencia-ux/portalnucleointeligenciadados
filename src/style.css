@@ -675,3 +675,92 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
   .apres-listas > * { flex: 1 1 100%; }
   .apres-item { flex-wrap: wrap; }
 }
+
+/* ===== Temas sazonais =====
+   Cada tema vale quando <html data-tema="…"> está marcado (ver src/lib/temas.js).
+   Mantém o HUD ciano e acrescenta só enfeites: nada aqui muda o layout. */
+
+/* Natal */
+[data-tema="natal"] {
+  --natal-vermelho: #ff4d63;
+  --natal-dourado: #ffc94d;
+  --natal-verde: #34f5a4;
+}
+[data-tema="natal"] body {
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(255, 201, 77, 0.10), transparent 70%),
+    radial-gradient(800px 560px at 100% 100%, rgba(255, 77, 99, 0.12), transparent 65%),
+    radial-gradient(800px 560px at 0% 100%, rgba(52, 245, 164, 0.08), transparent 65%),
+    radial-gradient(1200px 700px at 55% 30%, rgba(26, 124, 255, 0.16), transparent 60%),
+    radial-gradient(900px 600px at 0% 100%, rgba(56, 214, 255, 0.08), transparent 60%),
+    var(--fundo);
+}
+.neve { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+/* A neve fica acima do fundo e atrás dos painéis (o fundo do body cobriria um z-index negativo) */
+[data-tema="natal"] .moldura > .lateral { z-index: 1; }
+[data-tema="natal"] .moldura > .principal { position: relative; z-index: 1; }
+
+/* Gorro no ícone da marca */
+.gorro-natal { position: absolute; top: -19px; left: -12px; width: 40px; transform: rotate(-22deg); filter: drop-shadow(0 0 5px rgba(255, 77, 99, 0.55)); pointer-events: none; }
+.gorro-corpo { fill: var(--natal-vermelho); }
+.gorro-barra, .gorro-pompom { fill: #f4fbff; }
+
+/* Cordão de luzes na borda de baixo do topo */
+.luzes-natal { position: absolute; left: 0; right: 0; bottom: -15px; height: 20px; pointer-events: none; }
+.luzes-fio { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.luzes-fio path { fill: none; stroke: rgba(165, 240, 255, 0.35); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.luzes-natal i {
+  position: absolute; top: 34%; width: 7px; height: 10px; margin-left: -3.5px; border-radius: 50% 50% 45% 45% / 40% 40% 60% 60%;
+  background: currentColor; box-shadow: 0 0 6px 1px currentColor, 0 0 14px currentColor; animation: piscar-luz 2.4s ease-in-out infinite;
+}
+.luzes-natal i::before { content: ""; position: absolute; top: -3px; left: 1.5px; width: 4px; height: 3px; border-radius: 1px; background: #5d7a96; }
+.luzes-natal i.vermelha { color: var(--natal-vermelho); }
+.luzes-natal i.dourada { color: var(--natal-dourado); }
+.luzes-natal i.verde { color: var(--natal-verde); }
+.luzes-natal i.ciano { color: var(--ciano); }
+@keyframes piscar-luz { 0%, 100% { opacity: 1; } 45% { opacity: .28; box-shadow: 0 0 2px currentColor; } }
+
+/* Neve acumulada no alto de cada painel e um ramo de azevinho no canto */
+[data-tema="natal"] .hud-painel::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 26px; pointer-events: none; z-index: 1;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 26'%3E%3Cpath d='M20 14 C14 4 6 2 1 5 C5 7 4 11 7 12 C5 14 8 17 6 20 C11 19 15 17 20 14Z' fill='%2322c37a' stroke='%23a8ffd6' stroke-width='.8'/%3E%3Cpath d='M24 14 C30 4 38 2 43 5 C39 7 40 11 37 12 C39 14 36 17 38 20 C33 19 29 17 24 14Z' fill='%231fa86a' stroke='%23a8ffd6' stroke-width='.8'/%3E%3Ccircle cx='19' cy='16' r='3.6' fill='%23ff3d55'/%3E%3Ccircle cx='25' cy='16.5' r='3.6' fill='%23ff4d63'/%3E%3Ccircle cx='22' cy='20.5' r='3.6' fill='%23e8314a'/%3E%3Ccircle cx='18' cy='15' r='1' fill='%23fff' opacity='.8'/%3E%3C/svg%3E") no-repeat right 6px top 1px / 34px 20px,
+    radial-gradient(circle at 50% 0, rgba(240, 250, 255, 0.95) 0 6px, transparent 7px) 0 0 / 22px 9px repeat-x,
+    radial-gradient(circle at 50% 0, rgba(240, 250, 255, 0.85) 0 4px, transparent 5px) 11px 0 / 22px 7px repeat-x,
+    linear-gradient(180deg, rgba(240, 250, 255, 0.9) 0 3px, transparent 3px);
+  filter: drop-shadow(0 1px 3px rgba(165, 240, 255, 0.45));
+  border-radius: 12px 12px 0 0;
+}
+[data-tema="natal"] .hud-painel-topo h2 { color: #ffe2a0; text-shadow: 0 0 10px rgba(255, 201, 77, 0.55); }
+[data-tema="natal"] .hud-painel-topo .pilula, [data-tema="natal"] .ver-todas { margin-right: 28px; white-space: nowrap; }
+[data-tema="natal"] .menu .item.router-link-exact-active:not(.desmarcado), [data-tema="natal"] .menu .item.router-link-active:not([href="/"]):not(.desmarcado) {
+  background: linear-gradient(90deg, rgba(255, 77, 99, 0.22), rgba(52, 245, 164, 0.05)); border-color: rgba(255, 77, 99, 0.6); box-shadow: 0 0 18px rgba(255, 77, 99, 0.3);
+}
+[data-tema="natal"] .menu .item.router-link-exact-active:not(.desmarcado)::before, [data-tema="natal"] .menu .item.router-link-active:not([href="/"]):not(.desmarcado)::before { background: var(--natal-dourado); box-shadow: 0 0 10px var(--natal-dourado); }
+[data-tema="natal"] .marca strong { color: #ffe2a0; text-shadow: 0 0 12px rgba(255, 201, 77, 0.6); }
+[data-tema="natal"] .area-orb { background: radial-gradient(circle at 50% 50%, rgba(255, 77, 99, 0.10), rgba(52, 245, 164, 0.04) 45%, transparent 70%); border-color: rgba(255, 201, 77, 0.3); }
+.orb-natal .a1 { border-color: rgba(255, 201, 77, 0.45); }
+.orb-natal .a2 { border-color: rgba(255, 77, 99, 0.45); }
+.orb-natal .a3 { border-color: rgba(52, 245, 164, 0.4); box-shadow: 0 0 20px rgba(52, 245, 164, 0.2); }
+.orb-natal .chao { background: radial-gradient(ellipse, rgba(255, 77, 99, 0.35), rgba(52, 245, 164, 0.15) 50%, transparent 70%); }
+.orb-natal .orb-texto strong { text-shadow: 0 0 12px rgba(255, 77, 99, 0.9), 0 0 34px rgba(255, 201, 77, 0.6); }
+.orb-natal .orb-texto small { color: #a8ffd6; }
+
+/* Cantos dos painéis em dourado e vermelho, alternados */
+[data-tema="natal"] .hud-painel .c1, [data-tema="natal"] .hud-painel .c4 { border-color: var(--natal-dourado); filter: drop-shadow(0 0 4px var(--natal-dourado)); }
+[data-tema="natal"] .hud-painel .c2, [data-tema="natal"] .hud-painel .c3 { border-color: var(--natal-vermelho); filter: drop-shadow(0 0 4px var(--natal-vermelho)); }
+
+/* Saudação sob o NÚCLEO na orbe */
+.orb-texto em.orb-saudacao {
+  margin-top: .55rem; font-family: var(--fonte-hud); font-size: 1rem; font-weight: 700; letter-spacing: .32em; padding-left: .32em;
+  color: var(--natal-dourado, #ffc94d); text-shadow: 0 0 10px rgba(255, 201, 77, 0.65), 0 0 22px rgba(255, 77, 99, 0.35);
+}
+.orb-texto em.orb-contagem { margin-top: .3rem; font-family: var(--fonte-hud); font-size: .62rem; letter-spacing: .22em; color: #a8ffd6; text-shadow: 0 0 8px rgba(52, 245, 164, 0.5); }
+@media (max-width: 860px) {
+  .orb-texto em.orb-saudacao { font-size: .72rem; letter-spacing: .22em; }
+  .orb-texto em.orb-contagem { font-size: .55rem; letter-spacing: .12em; }
+  [data-tema="natal"] .topo, [data-tema="natal"] .moldura > .lateral { position: relative; }
+  .luzes-natal i:nth-of-type(even) { display: none; } /* metade das lâmpadas na tela estreita */
+}
+@media (prefers-reduced-motion: reduce) { .luzes-natal i { animation: none !important; } }
+.lista-temas { margin: 0 0 1rem; padding-left: 1.1rem; color: var(--suave); } .lista-temas strong { color: var(--texto); }

@@ -7,6 +7,10 @@ import Relogio from './components/Relogio.vue'
 import VozComando from './components/VozComando.vue'
 import MinhaSenha from './components/MinhaSenha.vue'
 import { saude, carregarSaude } from './lib/saude'
+import { temaAtivo, carregarTema } from './lib/temas'
+import Neve from './components/temas/Neve.vue'
+import Luzes from './components/temas/Luzes.vue'
+import Gorro from './components/temas/Gorro.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,7 +22,10 @@ const fazerSair = async () => { await sair(); router.push('/entrar') }
 // Na conta da TV: sai dela e abre o login já indicando que é para um administrador
 const entrarComoAdmin = async () => { await sair(); router.push({ path: '/entrar', query: { admin: '1' } }) }
 // Pílula do topo: mostra se o monitoramento achou algum sistema com problema
-watch(() => auth.usuario, (u) => { if (u) carregarSaude() }, { immediate: true })
+watch(() => auth.usuario, (u) => { if (u) { carregarSaude(); carregarTema() } }, { immediate: true })
+// Tema sazonal (Natal etc.): fica fora da conta da TV. A neve cai só na Central.
+const tema = computed(() => (auth.usuario && auth.usuario.papel !== 'apresentacao' ? temaAtivo.value?.id : null) || null)
+watch(tema, (t) => { if (t) document.documentElement.dataset.tema = t; else delete document.documentElement.dataset.tema }, { immediate: true })
 const situacaoGeral = computed(() => {
   const lista = Object.values(saude.porSlug)
   if (lista.some((v) => v.situacao === 'fora')) return { classe: 'alerta', texto: 'SISTEMA FORA DO AR' }
@@ -47,9 +54,10 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
     <main class="conteudo"><RouterView /></main>
   </div>
   <div v-else-if="auth.usuario" class="moldura">
+    <Neve v-if="tema === 'natal' && route.path === '/'" />
     <aside class="lateral">
       <RouterLink to="/" class="marca">
-        <span class="marca-icone"><img src="/favicon.svg" alt="" /></span>
+        <span class="marca-icone"><img src="/favicon.svg" alt="" /><Gorro v-if="tema === 'natal'" /></span>
         <span><strong>NÚCLEO</strong><small>Inteligência de Dados</small></span>
       </RouterLink>
       <nav class="menu">
@@ -84,6 +92,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
           <MinhaSenha />
           <button class="botao-link" @click="fazerSair">Sair</button>
         </div>
+        <Luzes v-if="tema === 'natal'" />
       </header>
       <main class="conteudo">
         <RouterView v-slot="{ Component, route }">
