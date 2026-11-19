@@ -8,16 +8,16 @@ let quadro = 0, flocos = [], w = 0, h = 0, ctx = null, ultimo = 0
 const reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 function criar(topo) {
-  const cristal = Math.random() < 0.14
+  const cristal = Math.random() < 0.2
   return {
     x: Math.random() * w,
     y: topo ? -10 - Math.random() * 40 : Math.random() * h,
-    r: cristal ? 3.5 + Math.random() * 3.5 : 0.7 + Math.random() * 1.8,
+    r: cristal ? 4 + Math.random() * 4.5 : 0.9 + Math.random() * 2.2,
     vy: 18 + Math.random() * 34, // px por segundo
     fase: Math.random() * Math.PI * 2,
     giro: (Math.random() - 0.5) * 0.6,
     ang: Math.random() * Math.PI,
-    alfa: 0.35 + Math.random() * 0.5,
+    alfa: 0.5 + Math.random() * 0.45,
     ciano: Math.random() < 0.35,
     cristal,
   }
@@ -28,7 +28,7 @@ function medir() {
   w = window.innerWidth; h = window.innerHeight
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  const total = Math.round(Math.min(110, Math.max(30, (w * h) / 15000)))
+  const total = Math.round(Math.min(170, Math.max(45, (w * h) / 9500)))
   while (flocos.length < total) flocos.push(criar(false))
   flocos.length = total
 }

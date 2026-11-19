@@ -1,16 +1,18 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { contagemNatal, corFaixa, arvore, presente, tampaEFita } from './temas/desenhoNatal'
 
 const props = defineProps({
   titulo: { type: String, default: 'NÚCLEO' },
   subtitulo: { type: String, default: 'INTELIGÊNCIA DE DADOS' },
   modo: { type: String, default: '' }, // '' | ouvindo | pensando | falando (assistente de voz)
   nivel: { type: Number, default: 0 }, // volume da voz (0 a 1)
-  enfeite: { type: String, default: '' }, // tema sazonal: 'natal' pendura bolas coloridas e uma estrela no topo
-  saudacao: { type: String, default: '' }, // texto no lugar da versão (ex.: FELIZ NATAL)
+  enfeite: { type: String, default: '' }, // tema sazonal: 'natal' veste a esfera de bola de Natal
 })
-// Bolas de Natal: alguns pontos da esfera viram enfeites coloridos
-const BOLAS = [[255, 84, 104], [255, 201, 77], [52, 245, 164], [255, 84, 104], [255, 214, 130]]
+const natal = computed(() => props.enfeite === 'natal')
+const saudacao = computed(() => (natal.value ? contagemNatal() : null))
+// Bolinhas coloridas presas na esfera
+const BOLAS = ['255,77,99', '255,201,77', '56,214,255', '255,120,200', '255,255,255']
 // Cor das linhas e dos pontos em cada modo
 const CORES = {
   '': [[80, 210, 255], [150, 235, 255]],
@@ -30,21 +32,6 @@ onMounted(() => {
     pontos.push([Math.cos(t) * r, y, Math.sin(t) * r])
   }
   let ang = 0, pulso = 0
-  // Estrela dourada no alto da esfera
-  const estrela = (x, y, r) => {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2)
-    g.addColorStop(0, 'rgba(255, 214, 120, 0.55)'); g.addColorStop(1, 'rgba(255, 214, 120, 0)')
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3.2, 0, Math.PI * 2); ctx.fill()
-    ctx.beginPath()
-    for (let k = 0; k < 10; k++) {
-      const a = -Math.PI / 2 + (k * Math.PI) / 5, rr = k % 2 ? r * 0.42 : r
-      ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr)
-    }
-    ctx.closePath()
-    ctx.fillStyle = '#ffe39a'; ctx.shadowColor = 'rgba(255, 201, 77, 0.95)'; ctx.shadowBlur = 14
-    ctx.fill(); ctx.shadowBlur = 0
-    ctx.strokeStyle = 'rgba(255, 245, 210, 0.9)'; ctx.lineWidth = 0.8; ctx.stroke()
-  }
   const desenhar = () => {
     const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight
     // Confere largura E altura: se só a altura do quadro muda (layout carregando), o desenho esticava.
@@ -58,7 +45,16 @@ onMounted(() => {
       : modo === 'pensando' ? 0.25 + 0.15 * Math.sin(performance.now() / 250) : 0
     pulso += (alvo - pulso) * 0.18
     const [linha, ponto] = CORES[modo] || CORES['']
-    const R = Math.min(w, h) * 0.36 * (1 + pulso * 0.1), cx = w / 2, cy = h / 2
+    const enfeitado = natal.value, agora = performance.now()
+    const R = Math.min(w, h) * (enfeitado ? 0.31 : 0.36) * (1 + pulso * 0.1), cx = w / 2, cy = h / 2 + (enfeitado ? h * 0.04 : 0)
+    if (enfeitado) {
+      // Pinheiros dos lados (só se couberem) e presentes no chão
+      const base = cy + R * 1.18, alt = Math.min(R * 1.45, h * 0.55)
+      if (w > R * 4.2) { arvore(ctx, Math.max(cx - R * 1.75, alt * 0.36), base, alt, agora, 0); arvore(ctx, Math.min(cx + R * 1.75, w - alt * 0.32), base, alt * 0.85, agora, 3) }
+      presente(ctx, cx - R * 0.95, base + 4, R * 0.22, '255,77,99', '255,201,77')
+      presente(ctx, cx - R * 0.66, base + 8, R * 0.15, '56,214,255', '255,120,200')
+      presente(ctx, cx + R * 0.8, base + 6, R * 0.19, '255,201,77', '255,77,99')
+    }
     const brilho = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.25)
     brilho.addColorStop(0, `rgba(${linha.join(',')},${0.28 + pulso * 0.25})`); brilho.addColorStop(0.6, 'rgba(20,120,220,0.10)'); brilho.addColorStop(1, 'rgba(0,0,0,0)')
     ctx.fillStyle = brilho; ctx.beginPath(); ctx.arc(cx, cy, R * 1.25, 0, Math.PI * 2); ctx.fill()
@@ -73,26 +69,26 @@ onMounted(() => {
       const a = proj[i], b = proj[j], dx = a[0] - b[0], dy = a[1] - b[1], d = dx * dx + dy * dy
       if (d < (R * 0.24) ** 2) {
         const prof = (a[2] + b[2] + 2) / 4
-        ctx.strokeStyle = `rgba(${linha.join(',')},${0.05 + prof * (0.35 + pulso * 0.3)})`
+        const cl = enfeitado && !modo ? corFaixa((pontos[i][1] + pontos[j][1]) / 2) : linha
+        ctx.strokeStyle = `rgba(${cl.join(',')},${0.05 + prof * (0.35 + pulso * 0.3)})`
         ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
       }
     }
-    const natal = props.enfeite === 'natal'
     for (let i = 0; i < N; i++) {
       const [x, y, z] = proj[i], prof = (z + 1) / 2
-      if (natal && i % 16 === 7) { // bola de Natal com brilho
-        const cor = BOLAS[(i >> 4) % BOLAS.length].join(','), r = 2.2 + prof * 3.2
+      if (enfeitado && i % 11 === 4) { // bolinha de Natal com brilho
+        const cor = BOLAS[(i / 11 | 0) % BOLAS.length], r = 2 + prof * 3, b = 0.75 + 0.25 * Math.sin(agora / 400 + i)
         const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3)
-        g.addColorStop(0, `rgba(${cor},${0.35 * prof + 0.1})`); g.addColorStop(1, `rgba(${cor},0)`)
+        g.addColorStop(0, `rgba(${cor},${(0.35 * prof + 0.1) * b})`); g.addColorStop(1, `rgba(${cor},0)`)
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill()
         ctx.fillStyle = `rgba(${cor},${0.35 + prof * 0.65})`
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
         continue
       }
-      ctx.fillStyle = `rgba(${ponto.join(',')},${0.25 + prof * 0.75})`
+      ctx.fillStyle = enfeitado && !modo ? `rgba(255,245,225,${0.25 + prof * 0.75})` : `rgba(${ponto.join(',')},${0.25 + prof * 0.75})`
       ctx.beginPath(); ctx.arc(x, y, 0.8 + prof * (1.6 + pulso * 1.2), 0, Math.PI * 2); ctx.fill()
     }
-    if (natal) estrela(cx, cy - R * 1.12, R * 0.13 * (1 + 0.06 * Math.sin(performance.now() / 600)))
+    if (enfeitado) tampaEFita(ctx, cx, cy - R, R, agora)
     ang += 0.0035 * (modo === 'pensando' ? 6 : modo ? 2 : 1)
     if (!reduzir) quadro = requestAnimationFrame(desenhar)
   }
@@ -104,14 +100,17 @@ onBeforeUnmount(() => { cancelAnimationFrame(quadro); observador?.disconnect() }
 </script>
 
 <template>
-  <div class="orb" :class="modo && `orb-${modo}`">
+  <div class="orb" :class="[modo && `orb-${modo}`, { 'orb-natal': natal }]">
     <span class="anel a1" /><span class="anel a2" /><span class="anel a3" />
     <span class="chao" aria-hidden="true" />
     <canvas ref="tela" aria-hidden="true" />
     <div class="orb-texto">
       <strong>{{ titulo }}</strong>
       <small>{{ subtitulo }}</small>
-      <em v-if="saudacao" class="orb-saudacao">✦ {{ saudacao }} ✦</em>
+      <template v-if="saudacao">
+        <em class="orb-saudacao">✦ {{ saudacao.titulo }} ✦</em>
+        <em class="orb-contagem">{{ saudacao.linha }}</em>
+      </template>
       <em v-else>DMAE · v1.0</em>
     </div>
   </div>

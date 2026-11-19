@@ -9,8 +9,6 @@ export const TEMAS = [
   {
     id: 'natal', nome: 'Natal', inicio: '12-01', fim: '01-06', // de 1º de dezembro ao Dia de Reis
     periodo: '1º de dezembro a 6 de janeiro',
-    // Feliz Natal até o dia 25; de 26/12 até o Dia de Reis, feliz ano novo.
-    saudacao: (d = new Date()) => ((d.getMonth() === 11 && d.getDate() > 25) || d.getMonth() === 0 ? 'FELIZ ANO NOVO' : 'FELIZ NATAL'),
   },
 ]
 

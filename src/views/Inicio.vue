@@ -78,7 +78,7 @@ async function abrir(app) {
       </ul>
     </HudPanel>
 
-    <div class="area-orb"><NucleoOrb :enfeite="temaAtivo?.id" :saudacao="temaAtivo?.saudacao?.()" /></div>
+    <div class="area-orb"><NucleoOrb :enfeite="temaAtivo?.id" /></div>
 
     <HudPanel titulo="Feed do Núcleo" etiqueta="AO VIVO" class="area-feed" :atraso="120">
       <div class="feed-filtros" role="group" aria-label="Filtrar o feed por situação">
