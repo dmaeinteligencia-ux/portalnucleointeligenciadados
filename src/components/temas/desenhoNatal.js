@@ -18,55 +18,6 @@ export function contagemNatal(d = new Date()) {
 const FAIXAS = [[255, 77, 99], [255, 201, 77], [52, 245, 164], [255, 201, 77]]
 export const corFaixa = y => FAIXAS[Math.min(FAIXAS.length - 1, Math.floor(((y + 1) / 2) * FAIXAS.length))]
 
-export function estrela(ctx, x, y, r, agora) {
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3.5)
-  g.addColorStop(0, 'rgba(255,214,120,0.55)'); g.addColorStop(1, 'rgba(255,214,120,0)')
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 3.5, 0, Math.PI * 2); ctx.fill()
-  ctx.save(); ctx.translate(x, y); ctx.rotate(agora / 3000)
-  ctx.strokeStyle = 'rgba(255,230,160,0.35)'; ctx.lineWidth = 1
-  for (let i = 0; i < 12; i++) {
-    const a = (i * Math.PI) / 6, f = i % 2 ? 2 : 2.8
-    ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * 1.3, Math.sin(a) * r * 1.3); ctx.lineTo(Math.cos(a) * r * f, Math.sin(a) * r * f); ctx.stroke()
-  }
-  ctx.restore()
-  ctx.beginPath()
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.42 : r
-    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr)
-  }
-  ctx.closePath()
-  ctx.fillStyle = '#ffe39a'; ctx.shadowColor = 'rgba(255,201,77,1)'; ctx.shadowBlur = 16
-  ctx.fill(); ctx.shadowBlur = 0
-  ctx.strokeStyle = 'rgba(255,250,225,0.95)'; ctx.lineWidth = 1; ctx.stroke()
-}
-
-// Pinheiro holográfico: três andares em linhas verdes, luzes piscando e estrela no topo
-const CORES_LUZ = ['255,77,99', '255,201,77', '56,214,255', '255,120,200']
-export function arvore(ctx, x, base, alt, agora, semente = 0) {
-  const larg = alt * 0.62
-  const andares = [[0, 0.42, 0.42], [0.25, 0.7, 0.72], [0.5, 0.92, 1]]
-  ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(52,245,164,0.85)'; ctx.fillStyle = 'rgba(52,245,164,0.10)'
-  ctx.shadowColor = 'rgba(52,245,164,0.7)'; ctx.shadowBlur = 8
-  for (const [t0, t1, l] of andares) {
-    const yt = base - alt + t0 * alt, yb = base - alt + t1 * alt, meio = (larg * l) / 2
-    ctx.beginPath(); ctx.moveTo(x, yt); ctx.lineTo(x + meio, yb); ctx.lineTo(x - meio, yb); ctx.closePath(); ctx.fill(); ctx.stroke()
-  }
-  ctx.shadowBlur = 0
-  // Tronco
-  ctx.strokeStyle = 'rgba(255,190,110,0.8)'; ctx.fillStyle = 'rgba(255,170,90,0.25)'
-  ctx.fillRect(x - alt * 0.05, base - alt * 0.08, alt * 0.1, alt * 0.08); ctx.strokeRect(x - alt * 0.05, base - alt * 0.08, alt * 0.1, alt * 0.08)
-  // Luzes em zigue-zague
-  for (let i = 0; i < 14; i++) {
-    const t = 0.18 + (i / 13) * 0.72, y = base - alt + t * alt
-    const meia = larg * 0.5 * (t * 0.95) * 0.75, lado = (i % 2 ? 1 : -1) * ((i * 37 + semente) % 7) / 7
-    const cor = CORES_LUZ[(i + semente) % CORES_LUZ.length], b = 0.4 + 0.6 * Math.max(0, Math.sin(agora / 380 + i * 1.7 + semente))
-    ctx.fillStyle = `rgba(${cor},${b})`; ctx.shadowColor = `rgba(${cor},1)`; ctx.shadowBlur = 8 * b
-    ctx.beginPath(); ctx.arc(x + lado * meia, y, 2.2, 0, Math.PI * 2); ctx.fill()
-  }
-  ctx.shadowBlur = 0
-  estrela(ctx, x, base - alt - 2, alt * 0.07, agora + semente * 500)
-}
-
 // Tampa dourada, argola e fita: a esfera fica pendurada como uma bola de Natal
 export function tampaEFita(ctx, cx, topoEsfera, R, agora) {
   const lt = R * 0.3, at = R * 0.16, yt = topoEsfera - at * 0.55
