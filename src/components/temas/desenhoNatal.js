@@ -67,18 +67,6 @@ export function arvore(ctx, x, base, alt, agora, semente = 0) {
   estrela(ctx, x, base - alt - 2, alt * 0.07, agora + semente * 500)
 }
 
-export function presente(ctx, x, y, s, cor, laco) {
-  ctx.fillStyle = `rgba(${cor},0.22)`; ctx.strokeStyle = `rgba(${cor},0.95)`; ctx.lineWidth = 1.2
-  ctx.shadowColor = `rgba(${cor},0.8)`; ctx.shadowBlur = 8
-  ctx.fillRect(x - s / 2, y - s, s, s); ctx.strokeRect(x - s / 2, y - s, s, s)
-  ctx.strokeRect(x - s * 0.56, y - s * 1.12, s * 1.12, s * 0.2)
-  ctx.shadowBlur = 0
-  ctx.strokeStyle = `rgba(${laco},0.95)`; ctx.lineWidth = 2
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s * 1.12); ctx.stroke()
-  ctx.beginPath(); ctx.ellipse(x - s * 0.16, y - s * 1.2, s * 0.16, s * 0.09, -0.5, 0, Math.PI * 2); ctx.stroke()
-  ctx.beginPath(); ctx.ellipse(x + s * 0.16, y - s * 1.2, s * 0.16, s * 0.09, 0.5, 0, Math.PI * 2); ctx.stroke()
-}
-
 // Tampa dourada, argola e fita: a esfera fica pendurada como uma bola de Natal
 export function tampaEFita(ctx, cx, topoEsfera, R, agora) {
   const lt = R * 0.3, at = R * 0.16, yt = topoEsfera - at * 0.55

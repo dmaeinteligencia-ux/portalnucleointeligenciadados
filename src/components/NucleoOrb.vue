@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { contagemNatal, corFaixa, arvore, presente, tampaEFita } from './temas/desenhoNatal'
+import { contagemNatal, corFaixa, arvore, tampaEFita } from './temas/desenhoNatal'
 
 const props = defineProps({
   titulo: { type: String, default: 'NÚCLEO' },
@@ -48,12 +48,9 @@ onMounted(() => {
     const enfeitado = natal.value, agora = performance.now()
     const R = Math.min(w, h) * (enfeitado ? 0.31 : 0.36) * (1 + pulso * 0.1), cx = w / 2, cy = h / 2 + (enfeitado ? h * 0.04 : 0)
     if (enfeitado) {
-      // Pinheiros dos lados (só se couberem) e presentes no chão
+      // Pinheiros dos lados (só se couberem)
       const base = cy + R * 1.18, alt = Math.min(R * 1.45, h * 0.55)
       if (w > R * 4.2) { arvore(ctx, Math.max(cx - R * 1.75, alt * 0.36), base, alt, agora, 0); arvore(ctx, Math.min(cx + R * 1.75, w - alt * 0.32), base, alt * 0.85, agora, 3) }
-      presente(ctx, cx - R * 0.95, base + 4, R * 0.22, '255,77,99', '255,201,77')
-      presente(ctx, cx - R * 0.66, base + 8, R * 0.15, '56,214,255', '255,120,200')
-      presente(ctx, cx + R * 0.8, base + 6, R * 0.19, '255,201,77', '255,77,99')
     }
     const brilho = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.25)
     brilho.addColorStop(0, `rgba(${linha.join(',')},${0.28 + pulso * 0.25})`); brilho.addColorStop(0.6, 'rgba(20,120,220,0.10)'); brilho.addColorStop(1, 'rgba(0,0,0,0)')
