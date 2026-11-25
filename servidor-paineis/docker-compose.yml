@@ -1,0 +1,23 @@
+# Serviço de dados dos painéis. Fica atrás do Caddy do servidor-voz (https://172.22.1.200/paineis/).
+# Uso: cp .env.example .env && docker compose up -d --build
+# Suba o servidor-voz antes: este serviço entra na rede dele.
+name: paineis-nucleo
+
+services:
+  paineis:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8000"
+    networks:
+      default:
+        aliases: [paineis]
+    # O servidor tem pouca memória livre: limite baixo de propósito
+    mem_limit: 256m
+    cpus: 1
+
+networks:
+  default:
+    name: voz-nucleo_default
+    external: true

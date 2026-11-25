@@ -53,7 +53,7 @@ const iniciais = n => (n || '?').split(/[ @.]/).filter(Boolean).slice(0, 2).map(
     </header>
     <main class="conteudo"><RouterView /></main>
   </div>
-  <div v-else-if="auth.usuario" class="moldura">
+  <div v-else-if="auth.usuario && !route.meta.telaCheia" class="moldura">
     <Neve v-if="tema === 'natal' && route.path === '/'" />
     <aside class="lateral">
       <RouterLink to="/" class="marca">

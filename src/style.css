@@ -764,3 +764,4 @@ small.perigo { color: #ff7a7a; display: block; margin-top: 4px; }
 }
 @media (prefers-reduced-motion: reduce) { .luzes-natal i { animation: none !important; } }
 .lista-temas { margin: 0 0 1rem; padding-left: 1.1rem; color: var(--suave); } .lista-temas strong { color: var(--texto); }
+
