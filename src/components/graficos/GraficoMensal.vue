@@ -1,11 +1,12 @@
 <script setup>
-// Evolução mensal: duas séries na mesma unidade (quantidade de OS), um único eixo.
+// Evolução mensal: séries na mesma unidade (quantidade de OS), um único eixo.
+// Uma série pode vir em colunas (forma: 'coluna') e as outras em linha.
 import { computed, ref } from 'vue'
 import { numero, mesCurto } from '../../lib/paineis'
 
 const props = defineProps({
   dados: { type: Array, required: true }, // [{ mes, ...valores }]
-  series: { type: Array, required: true }, // [{ campo, nome, cor }]
+  series: { type: Array, required: true }, // [{ campo, nome, cor, forma? }]
 })
 
 const L = 720, A = 260, M = { e: 52, d: 28, t: 16, b: 30 }
@@ -17,10 +18,20 @@ const maximo = computed(() => {
   const ordem = 10 ** Math.floor(Math.log10(bruto))
   return Math.ceil(bruto / ordem) * ordem
 })
-const x = (i) => M.e + (props.dados.length <= 1 ? larg / 2 : (i * larg) / (props.dados.length - 1))
+// Com colunas, cada mês ocupa uma faixa e o ponto fica no meio dela
+const temColuna = computed(() => props.series.some((s) => s.forma === 'coluna'))
+const faixa = computed(() => larg / Math.max(1, props.dados.length))
+const x = (i) => temColuna.value ? M.e + faixa.value * (i + 0.5)
+  : M.e + (props.dados.length <= 1 ? larg / 2 : (i * larg) / (props.dados.length - 1))
 const y = (v) => M.t + alt - ((v || 0) / maximo.value) * alt
 const marcas = computed(() => [0, 0.25, 0.5, 0.75, 1].map((f) => f * maximo.value))
-const linhas = computed(() => props.series.map((s) => ({
+const colunas = computed(() => props.series.filter((s) => s.forma === 'coluna').map((s) => ({
+  ...s, barras: props.dados.map((p, i) => {
+    const w = Math.min(34, faixa.value * 0.62), x0 = x(i) - w / 2, y0 = y(p[s.campo]), base = M.t + alt, r = Math.min(4, base - y0)
+    return { mes: p.mes, d: `M${x0},${base} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + w - r} Q${x0 + w},${y0} ${x0 + w},${y0 + r} V${base} Z` }
+  }),
+})))
+const linhas = computed(() => props.series.filter((s) => s.forma !== 'coluna').map((s) => ({
   ...s, d: props.dados.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[s.campo]).toFixed(1)}`).join(' '),
 })))
 const passoRotulo = computed(() => Math.ceil(props.dados.length / 12))
@@ -30,7 +41,7 @@ function mover(ev) {
   const caixa = ev.currentTarget.getBoundingClientRect()
   const px = ((ev.clientX - caixa.left) / caixa.width) * L
   if (!props.dados.length) return
-  const i = Math.round(((px - M.e) / larg) * (props.dados.length - 1))
+  const i = temColuna.value ? Math.floor((px - M.e) / faixa.value) : Math.round(((px - M.e) / larg) * (props.dados.length - 1))
   foco.value = Math.min(props.dados.length - 1, Math.max(0, i))
 }
 const dica = computed(() => (foco.value === null ? null : props.dados[foco.value]))
@@ -52,6 +63,9 @@ const dicaEsq = computed(() => (foco.value === null ? 0 : (x(foco.value) / L) * 
           </g>
           <text v-for="(p, i) in dados" v-show="i % passoRotulo === 0 || i === dados.length - 1" :key="p.mes"
                 :x="x(i)" :y="A - 8" text-anchor="middle">{{ mesCurto(p.mes) }}</text>
+        </g>
+        <g v-for="s in colunas" :key="s.campo">
+          <path v-for="(b, i) in s.barras" :key="b.mes" :d="b.d" :fill="s.cor" :fill-opacity="foco === null || foco === i ? .85 : .45" />
         </g>
         <line v-if="foco !== null" class="mira" :x1="x(foco)" :x2="x(foco)" :y1="M.t" :y2="M.t + alt" />
         <g v-for="s in linhas" :key="s.campo">

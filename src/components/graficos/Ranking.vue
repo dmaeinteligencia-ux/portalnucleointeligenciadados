@@ -9,6 +9,7 @@ const props = defineProps({
   selecionado: { type: [Number, String], default: null },
   clicavel: { type: Boolean, default: false },
   detalhe: { type: String, default: 'execucao' }, // 'execucao' | 'nenhum'
+  estilo: { type: String, default: 'barra' }, // 'barra' | 'pirulito'
 })
 const emit = defineEmits(['escolher'])
 const maximo = computed(() => Math.max(1, ...props.itens.map((i) => i.total)))
@@ -19,7 +20,7 @@ const titulo = (i) => props.detalhe === 'execucao' && i.executadas !== undefined
 
 <template>
   <p v-if="!itens.length" class="suave pequeno">Sem dados no recorte escolhido.</p>
-  <ol v-else class="ranking" :class="{ clicavel }">
+  <ol v-else class="ranking" :class="[{ clicavel }, estilo]">
     <li v-for="i in itens" :key="i.codigo" :title="titulo(i)" :class="{ ativo: selecionado === i.codigo }"
         :tabindex="clicavel ? 0 : -1" @click="clicavel && emit('escolher', i.codigo)"
         @keydown.enter="clicavel && emit('escolher', i.codigo)">

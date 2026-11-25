@@ -256,6 +256,10 @@ def dados(
                 "bairros": _linhas(cur, q.SQL_BAIRROS, p),
                 "regioes": _linhas(cur, q.SQL_REGIOES, p),
                 "equipes": _linhas(cur, q.SQL_EQUIPES, p),
+                "semana_hora": _linhas(cur, q.SQL_SEMANA_HORA, p),
+                "faixas_tempo": _linhas(cur, q.SQL_FAIXAS_TEMPO, p),
+                "regioes_mensal": _linhas(cur, q.SQL_REGIOES_MENSAL, p),
+                "idade_abertas": _linhas(cur, q.SQL_IDADE_ABERTAS, p),
                 "mapa": _linhas(cur, q.SQL_MAPA, p),
                 "cobertura_mapa": _uma(cur, q.SQL_COBERTURA_MAPA, p),
             }

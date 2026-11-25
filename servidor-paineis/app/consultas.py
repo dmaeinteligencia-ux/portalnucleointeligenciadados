@@ -141,6 +141,47 @@ from painel.mag_os {_ONDE}
 group by 1 order by total desc
 """
 
+# Quando os pedidos chegam: dia da semana (1 = segunda) × hora do dia
+SQL_SEMANA_HORA = f"""
+select extract(isodow from dt_solicitacao)::int as dia, extract(hour from dt_solicitacao)::int as hora, count(*) as total
+from painel.mag_os {_ONDE}
+group by 1, 2 order by 1, 2
+"""
+
+# Quanto tempo as OS executadas levaram, em faixas
+SQL_FAIXAS_TEMPO = f"""
+select faixa, count(*) as total
+from (
+  select case
+    when horas_ate_execucao < 4 then 1 when horas_ate_execucao < 12 then 2
+    when horas_ate_execucao < 24 then 3 when horas_ate_execucao < 48 then 4
+    when horas_ate_execucao < 120 then 5 when horas_ate_execucao < 240 then 6 else 7 end as faixa
+  from painel.mag_os
+  {_ONDE} and executada and horas_ate_execucao is not null
+) t
+group by 1 order by 1
+"""
+
+# Tendência por região DMAE (pequenos múltiplos)
+SQL_REGIOES_MENSAL = f"""
+select cd_regiao_dmae::int as regiao, mes_solicitacao as mes, count(*) as total
+from painel.mag_os {_ONDE} and cd_regiao_dmae >= 1
+group by 1, 2 order by 1, 2
+"""
+
+# Idade das OS em aberto agora (não depende do período, só do recorte)
+SQL_IDADE_ABERTAS = f"""
+select case
+    when dt_solicitacao >= now() - interval '1 day' then 1
+    when dt_solicitacao >= now() - interval '3 days' then 2
+    when dt_solicitacao >= now() - interval '7 days' then 3
+    when dt_solicitacao >= now() - interval '30 days' then 4 else 5 end as faixa,
+  count(*) as total
+from painel.mag_os
+where em_aberto and {_RECORTE}
+group by 1 order by 1
+"""
+
 # Pontos do mapa: agregados na grade de ~100 m que as coordenadas já têm
 SQL_MAPA = f"""
 select latitude::float as lat, longitude::float as lon, count(*) as total

@@ -1,11 +1,12 @@
 <script setup>
-// Mapa de calor simples, sem mapa de fundo: cada ponto é uma célula de ~100 m e fica mais
-// forte quanto mais OS tem. Mostra onde as ocorrências se concentram na cidade.
+// Mapa em hexágonos (hexbin), sem mapa de fundo: as OS são somadas em hexágonos de mesmo
+// tamanho e cada um fica mais escuro quanto mais OS tem. Mostra onde a demanda se concentra.
 import { computed, ref } from 'vue'
 import { numero } from '../../lib/paineis'
 
 const props = defineProps({ pontos: { type: Array, required: true } }) // [{ lat, lon, total }]
-const L = 560, A = 460, borda = 14
+const L = 560, A = 460, borda = 14, RH = 9 // raio do hexágono
+const RAMPA = ['#d3e1f3', '#a9c4e8', '#7aa3d9', '#4a7fc4', '#1f5ea8', '#0b3f7e']
 
 const caixa = computed(() => {
   if (!props.pontos.length) return null
@@ -20,20 +21,33 @@ const caixa = computed(() => {
   const k = Math.min((L - 2 * borda) / larg, (A - 2 * borda) / alt)
   return { la1, lo0, escalaLon, k, dx: (L - larg * k) / 2, dy: (A - alt * k) / 2 }
 })
-const maximo = computed(() => Math.max(1, ...props.pontos.map((p) => p.total)))
-const desenhados = computed(() => {
+const hexagonos = computed(() => {
   const c = caixa.value
   if (!c) return []
-  return [...props.pontos].sort((a, b) => a.total - b.total).map((p) => {
-    const f = Math.sqrt(p.total / maximo.value)
-    return {
-      ...p,
-      x: c.dx + (p.lon - c.lo0) * c.escalaLon * c.k,
-      y: c.dy + (c.la1 - p.lat) * c.k,
-      r: 2.5 + f * 7,
-      o: 0.25 + f * 0.75,
+  const w = Math.sqrt(3) * RH, h = 1.5 * RH, soma = new Map()
+  for (const p of props.pontos) {
+    const px = c.dx + (p.lon - c.lo0) * c.escalaLon * c.k, py = c.dy + (c.la1 - p.lat) * c.k
+    if (px < 0 || px > L || py < 0 || py > A) continue
+    // Hexágono mais próximo (grade com linhas alternadas deslocadas)
+    let lin = Math.round(py / h), col = Math.round((px - (lin & 1 ? w / 2 : 0)) / w), melhor = null
+    for (const dl of [-1, 0, 1]) for (const dc of [-1, 0, 1]) {
+      const l = lin + dl, k = col + dc, cx = k * w + (l & 1 ? w / 2 : 0), cy = l * h, d = (px - cx) ** 2 + (py - cy) ** 2
+      if (!melhor || d < melhor.d) melhor = { l, k, cx, cy, d }
     }
-  }).filter((p) => p.x >= 0 && p.x <= L && p.y >= 0 && p.y <= A)
+    const chave = `${melhor.l},${melhor.k}`
+    const atual = soma.get(chave) || { x: melhor.cx, y: melhor.cy, total: 0 }
+    atual.total += p.total
+    soma.set(chave, atual)
+  }
+  const lista = [...soma.values()]
+  const max = Math.max(1, ...lista.map((x) => x.total))
+  const forma = Array.from({ length: 6 }, (_, i) => {
+    const ang = (Math.PI / 180) * (60 * i - 30)
+    return `${(RH * Math.cos(ang)).toFixed(2)},${(RH * Math.sin(ang)).toFixed(2)}`
+  }).join(' ')
+  return lista.map((x) => ({
+    ...x, forma, cor: RAMPA[Math.min(RAMPA.length - 1, Math.floor(Math.sqrt(x.total / max) * RAMPA.length))],
+  }))
 })
 const foco = ref(null)
 </script>
@@ -43,13 +57,15 @@ const foco = ref(null)
     <p v-if="!pontos.length" class="suave pequeno">Nenhuma OS com coordenada no recorte escolhido.</p>
     <svg v-else :viewBox="`0 0 ${L} ${A}`" role="img" aria-label="Mapa de concentração das OS" @mouseleave="foco = null">
       <rect x="0" y="0" :width="L" :height="A" rx="10" class="mapa-fundo" />
-      <circle v-for="(p, i) in desenhados" :key="i" :cx="p.x" :cy="p.y" :r="p.r" :fill-opacity="p.o"
-              class="mapa-ponto" @mouseenter="foco = p" />
-      <circle v-if="foco" :cx="foco.x" :cy="foco.y" :r="foco.r + 3" class="mapa-foco" />
+      <polygon v-for="(hx, i) in hexagonos" :key="i" :points="hx.forma" :transform="`translate(${hx.x} ${hx.y})`" :fill="hx.cor"
+               class="mapa-hex" :class="{ focado: foco === hx }" @mouseenter="foco = hx" />
     </svg>
-    <p class="mapa-legenda pequeno suave">
-      <template v-if="foco"><b>{{ numero(foco.total) }} OS</b> neste ponto (≈100 m)</template>
-      <template v-else>Passe o mouse num ponto. Quanto maior e mais forte, mais OS.</template>
-    </p>
+    <div class="calor-rodape">
+      <p class="pequeno suave">
+        <template v-if="foco"><b>{{ numero(foco.total) }} OS</b> neste hexágono (≈{{ numero(Math.round((2 * RH) / caixa.k * 111000 / 10) * 10) }} m)</template>
+        <template v-else>Passe o mouse num hexágono. Quanto mais escuro, mais OS.</template>
+      </p>
+      <span class="calor-escala pequeno suave">menos <i v-for="c in RAMPA" :key="c" :style="{ background: c }" /> mais</span>
+    </div>
   </div>
 </template>

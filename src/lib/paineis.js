@@ -114,5 +114,13 @@ function demoPainel(caminho, params) {
     motivos: lista('Motivo', 6, 6000).map(({ codigo, nome, total }) => ({ codigo, nome, total })),
     bairros: lista('Bairro', 15, 3000), regioes: lista('Região', 3, 30000), equipes: lista('Equipe', 15, 6000),
     mapa, cobertura_mapa: { com_coordenada: Math.round(os * 0.53), total: os },
+    semana_hora: Array.from({ length: 7 * 24 }, (_, i) => {
+      const dia = Math.floor(i / 24) + 1, hora = i % 24
+      const curva = Math.exp(-((hora - 10) ** 2) / 18) + 0.5 * Math.exp(-((hora - 15) ** 2) / 10) + 0.04
+      return { dia, hora, total: Math.round(900 * curva * (dia >= 6 ? 0.45 : 1) * (0.85 + r() * 0.3)) }
+    }),
+    faixas_tempo: [9, 21, 24, 18, 15, 8, 5].map((t, i) => ({ faixa: i + 1, total: Math.round((os * 0.82 * t) / 100) })),
+    regioes_mensal: [1, 2, 3].flatMap((reg) => mensal.map((m) => ({ regiao: reg, mes: m.mes, total: Math.round(m.os_abertas * [0.5, 0.29, 0.21][reg - 1] * (0.9 + r() * 0.2)) }))),
+    idade_abertas: [210, 180, 125, 70, 27].map((t, i) => ({ faixa: i + 1, total: t })),
   })
 }

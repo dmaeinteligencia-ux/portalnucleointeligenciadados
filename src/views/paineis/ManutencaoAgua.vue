@@ -8,6 +8,13 @@ import './painel-claro.css'
 import GraficoMensal from '../../components/graficos/GraficoMensal.vue'
 import Ranking from '../../components/graficos/Ranking.vue'
 import MapaPontos from '../../components/graficos/MapaPontos.vue'
+import Faisca from '../../components/graficos/Faisca.vue'
+import Rosca from '../../components/graficos/Rosca.vue'
+import MapaCalor from '../../components/graficos/MapaCalor.vue'
+import Colunas from '../../components/graficos/Colunas.vue'
+import Treemap from '../../components/graficos/Treemap.vue'
+import Dispersao from '../../components/graficos/Dispersao.vue'
+import Multiplos from '../../components/graficos/Multiplos.vue'
 import { buscarPainel, numero, pct, horas, dataHora, PAINEIS_URL } from '../../lib/paineis'
 
 const route = useRoute()
@@ -67,17 +74,33 @@ const sel = (campo) => (f[campo] ? Number(f[campo]) : null)
 const ind = computed(() => dados.value?.indicadores || {})
 const cartoes = computed(() => {
   const i = ind.value
+  const serie = (k) => (dados.value?.mensal || []).map((m) => m[k])
   return [
-    { rotulo: 'Solicitações', valor: numero(i.solicitacoes), nota: `${numero(i.os_abertas)} OS geradas` },
-    { rotulo: 'OS executadas', valor: pct(i.executadas, i.os_abertas), nota: `${numero(i.executadas)} de ${numero(i.os_abertas)} abertas no período` },
-    { rotulo: 'Tempo até executar', valor: horas(i.mediana_horas), nota: `metade sai até esse tempo · 90% até ${horas(i.p90_horas)}` },
-    { rotulo: 'No prazo', valor: pct(i.no_prazo, i.com_prazo), nota: `das executadas com prazo definido (${numero(i.com_prazo)})` },
-    { rotulo: 'Reprogramadas', valor: pct(i.reprogramadas, i.os_abertas), nota: `${numero(i.reprogramadas)} OS` },
+    { rotulo: 'Solicitações', valor: numero(i.solicitacoes), nota: `${numero(i.os_abertas)} OS geradas`, faisca: serie('solicitacoes') },
+    { rotulo: 'OS executadas', valor: pct(i.executadas, i.os_abertas), nota: `${numero(i.executadas)} de ${numero(i.os_abertas)} abertas no período`, faisca: serie('executadas_no_mes'), cor: CORES.executadas },
+    { rotulo: 'Tempo até executar', valor: horas(i.mediana_horas), nota: `metade sai até esse tempo · 90% até ${horas(i.p90_horas)}`, faisca: serie('mediana_horas') },
+    { rotulo: 'No prazo', valor: pct(i.no_prazo, i.com_prazo), nota: `das executadas com prazo definido (${numero(i.com_prazo)})`, medidor: i.com_prazo ? i.no_prazo / i.com_prazo : null },
+    { rotulo: 'Reprogramadas', valor: pct(i.reprogramadas, i.os_abertas), nota: `${numero(i.reprogramadas)} OS`, faisca: serie('reprogramadas'), cor: CORES.atencao },
     { rotulo: 'Em aberto agora', valor: numero(i.em_aberto_agora), nota: `${numero(i.em_aberto_48h)} há mais de 48 h`, alerta: i.em_aberto_48h > 0 },
   ]
 })
-const situacaoTotal = computed(() => (dados.value?.situacao || []).reduce((a, s) => a + s.total, 0))
 const corSituacao = { Executada: '#2f9e72', Reprogramada: '#d98a1c', Programada: '#0e50a0', Aguardando: '#8a9bb0', Cancelada: '#c2414b', Duplicidade: '#c2414b', Parcelada: '#6c8ebf' }
+const situacao = computed(() => (dados.value?.situacao || []).map((s) => ({ ...s, cor: corSituacao[s.nome] || '#8a9bb0' })))
+const FAIXAS_TEMPO = ['< 4 h', '4–12 h', '12–24 h', '1–2 d', '2–5 d', '5–10 d', '> 10 d']
+const faixasTempo = computed(() => FAIXAS_TEMPO.map((nome, k) => ({
+  nome, total: (dados.value?.faixas_tempo || []).find((x) => x.faixa === k + 1)?.total || 0,
+  cor: k < 3 ? CORES.executadas : k < 5 ? CORES.abertas : CORES.atencao,
+})))
+const FAIXAS_IDADE = ['< 1 dia', '1–3 dias', '3–7 dias', '7–30 dias', '> 30 dias']
+const RAMPA_IDADE = ['#f6dcb4', '#eebc78', '#d98a1c', '#ad6a0e', '#7a4a08']
+const idadeAbertas = computed(() => FAIXAS_IDADE.map((nome, k) => ({
+  nome, total: (dados.value?.idade_abertas || []).find((x) => x.faixa === k + 1)?.total || 0, cor: RAMPA_IDADE[k],
+})))
+const sintomasResumo = computed(() => {
+  const l = dados.value?.sintomas || [], tot = ind.value.os_abertas || 1
+  const top3 = l.slice(0, 3).reduce((a, x) => a + x.total, 0)
+  return l.length >= 3 ? `Os 3 sintomas mais comuns somam ${pct(top3, tot)} das OS.` : ''
+})
 const imprimir = () => window.print()
 const cobertura = computed(() => dados.value?.cobertura_mapa || {})
 </script>
@@ -142,31 +165,39 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
         <small>{{ c.rotulo }}</small>
         <strong>{{ c.valor }}</strong>
         <span class="pequeno suave">{{ c.nota }}</span>
+        <Faisca v-if="c.faisca" :valores="c.faisca" :cor="c.cor || CORES.abertas" />
+        <span v-else-if="c.medidor !== undefined && c.medidor !== null" class="medidor" :title="`${Math.round(c.medidor * 100)}% no prazo`">
+          <i :style="{ width: `${c.medidor * 100}%` }" />
+        </span>
       </article>
     </section>
 
     <section class="cartao area-mensal">
       <h2>OS abertas × executadas por mês</h2>
       <GraficoMensal :dados="dados.mensal" :series="[
-        { campo: 'os_abertas', nome: 'OS abertas', cor: CORES.abertas },
+        { campo: 'os_abertas', nome: 'OS abertas', cor: CORES.abertas, forma: 'coluna' },
         { campo: 'executadas_no_mes', nome: 'OS executadas no mês', cor: CORES.executadas },
       ]" />
     </section>
 
     <section class="cartao area-situacao">
       <h2>Situação das OS</h2>
-      <div class="barra-situacao" role="img" :aria-label="(dados.situacao || []).map((s) => `${s.nome} ${s.total}`).join(', ')">
-        <i v-for="s in dados.situacao" :key="s.nome" :title="`${s.nome}: ${numero(s.total)}`"
-           :style="{ flexGrow: s.total, background: corSituacao[s.nome] || '#8a9bb0' }" />
-      </div>
-      <ul class="lista-situacao">
-        <li v-for="s in dados.situacao" :key="s.nome">
-          <i :style="{ background: corSituacao[s.nome] || '#8a9bb0' }" />{{ s.nome }}
-          <b>{{ numero(s.total) }}</b><span class="suave">{{ pct(s.total, situacaoTotal) }}</span>
-        </li>
-      </ul>
+      <Rosca :itens="situacao" />
       <h3 class="subtitulo">Motivos de reprogramação</h3>
-      <Ranking :itens="dados.motivos" :cor="CORES.atencao" detalhe="nenhum" />
+      <Ranking :itens="dados.motivos" :cor="CORES.atencao" detalhe="nenhum" estilo="pirulito" />
+    </section>
+
+    <section class="cartao area-calor">
+      <h2>Quando os pedidos chegam</h2>
+      <p class="cartao-nota">OS abertas por dia da semana e hora</p>
+      <MapaCalor :celulas="dados.semana_hora || []" />
+    </section>
+
+    <section class="cartao area-tempo">
+      <h2>Quanto tempo levou para executar</h2>
+      <p class="cartao-nota">OS executadas por faixa de tempo</p>
+      <Colunas :itens="faixasTempo" />
+      <p class="pequeno suave">Verde: até 24 h · azul: 1 a 5 dias · âmbar: mais de 5 dias.</p>
     </section>
 
     <section class="cartao area-servicos">
@@ -177,8 +208,9 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
 
     <section class="cartao area-sintomas">
       <h2>O que o cidadão relatou</h2>
-      <p class="cartao-nota">clique para filtrar</p>
-      <Ranking :itens="dados.sintomas" :cor="CORES.executadas" clicavel :selecionado="sel('sintoma')" @escolher="(c) => alternar('sintoma', c)" />
+      <p class="cartao-nota">clique num bloco para filtrar</p>
+      <Treemap :itens="dados.sintomas" :cor="CORES.executadas" :selecionado="sel('sintoma')" @escolher="(c) => alternar('sintoma', c)" />
+      <p class="pequeno suave">{{ sintomasResumo }} O tamanho do bloco é o volume.</p>
     </section>
 
     <section class="cartao area-mapa">
@@ -192,13 +224,20 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <p class="cartao-nota">clique para filtrar</p>
       <Ranking :itens="dados.bairros" :cor="CORES.abertas" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
       <h3 class="subtitulo">Regiões DMAE</h3>
-      <Ranking :itens="dados.regioes" :cor="CORES.abertas" clicavel :selecionado="sel('regiao')" @escolher="(c) => alternar('regiao', c)" />
+      <Multiplos :linhas="dados.regioes_mensal || []" :cor="CORES.abertas" :selecionado="f.regiao" @escolher="(c) => alternar('regiao', c)" />
     </section>
 
     <section class="cartao area-equipes">
-      <h2>Equipes que mais executaram</h2>
-      <p class="cartao-nota">só código · clique para filtrar</p>
-      <Ranking :itens="dados.equipes" :cor="CORES.executadas" clicavel :selecionado="sel('equipe')" @escolher="(c) => alternar('equipe', c)" />
+      <h2>Equipes: volume × rapidez</h2>
+      <p class="cartao-nota">15 equipes com mais OS · só código</p>
+      <Dispersao :itens="dados.equipes" :cor="CORES.executadas" :selecionado="sel('equipe')" @escolher="(c) => alternar('equipe', c)" />
+    </section>
+
+    <section class="cartao area-idade">
+      <h2>Há quanto tempo as pendentes esperam</h2>
+      <p class="cartao-nota">OS em aberto agora, por idade</p>
+      <Colunas :itens="idadeAbertas" />
+      <p class="pequeno suave">Não depende do período escolhido, só dos outros filtros.</p>
     </section>
 
     <section class="cartao area-tabela">
