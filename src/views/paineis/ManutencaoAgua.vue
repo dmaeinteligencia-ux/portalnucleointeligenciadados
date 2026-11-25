@@ -4,7 +4,7 @@
 // Fora do painel: Corte OB e Religação OB. Equipes aparecem só pelo código (não há cadastro de nomes).
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import HudPanel from '../../components/HudPanel.vue'
+import './painel-claro.css'
 import GraficoMensal from '../../components/graficos/GraficoMensal.vue'
 import Ranking from '../../components/graficos/Ranking.vue'
 import MapaPontos from '../../components/graficos/MapaPontos.vue'
@@ -13,7 +13,8 @@ import { buscarPainel, numero, pct, horas, dataHora, PAINEIS_URL } from '../../l
 const route = useRoute()
 const router = useRouter()
 
-const CORES = { abertas: '#38d6ff', executadas: '#a78bfa' }
+// Paleta validada sobre fundo branco (azul DMAE, verde, âmbar para atenção)
+const CORES = { abertas: '#0e50a0', executadas: '#2f9e72', atencao: '#d98a1c' }
 const CAMPOS = ['inicio', 'fim', 'servico', 'sintoma', 'bairro', 'regiao', 'equipe']
 
 const hoje = new Date()
@@ -76,26 +77,32 @@ const cartoes = computed(() => {
   ]
 })
 const situacaoTotal = computed(() => (dados.value?.situacao || []).reduce((a, s) => a + s.total, 0))
-const corSituacao = { Executada: '#a78bfa', Reprogramada: '#ffc94d', Programada: '#38d6ff', Aguardando: '#7d9bbb', Cancelada: '#ff6b7d', Duplicidade: '#ff6b7d', Parcelada: '#3b6f9e' }
+const corSituacao = { Executada: '#2f9e72', Reprogramada: '#d98a1c', Programada: '#0e50a0', Aguardando: '#8a9bb0', Cancelada: '#c2414b', Duplicidade: '#c2414b', Parcelada: '#6c8ebf' }
+const imprimir = () => window.print()
 const cobertura = computed(() => dados.value?.cobertura_mapa || {})
 </script>
 
 <template>
-<div class="painel-proprio">
+<div class="painel-claro">
   <header class="painel-cabecalho">
-    <div>
-      <h1 class="titulo-tela">Manutenção de Água</h1>
-      <p class="suave">Solicitações e execuções de serviços · Sistema SIMA</p>
+    <img src="/logo-dmae.png" alt="DMAE · Prefeitura de Uberlândia" class="painel-logo" />
+    <div class="painel-titulo">
+      <h1>Solicitações e Execuções de Serviços</h1>
+      <p>Manutenção de Água · dados do SIMA</p>
     </div>
     <p v-if="dados?.atualizacao?.executado_em" class="pequeno suave painel-atualizado">
       Dados de {{ dataHora(dados.atualizacao.executado_em) }}<br />atualizados a cada hora
     </p>
+    <nav class="painel-acoes">
+      <button class="painel-botao" @click="imprimir">Imprimir / PDF</button>
+      <RouterLink to="/" class="painel-botao secundario">‹ Portal</RouterLink>
+    </nav>
   </header>
 
   <!-- Filtros: uma linha acima dos gráficos -->
   <section class="painel-filtros">
     <div class="atalhos" role="group" aria-label="Período">
-      <button v-for="a in atalhos" :key="a.id" class="feed-filtro" :class="{ ativo: atalhoAtivo === a.id }" @click="usarAtalho(a)">{{ a.nome }}</button>
+      <button v-for="a in atalhos" :key="a.id" class="chip" :class="{ ativo: atalhoAtivo === a.id }" @click="usarAtalho(a)">{{ a.nome }}</button>
     </div>
     <label>De <input v-model="f.inicio" type="date" :min="opcoes?.periodo?.inicio" :max="f.fim" /></label>
     <label>Até <input v-model="f.fim" type="date" :min="f.inicio" /></label>
@@ -119,15 +126,15 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <option value="">Todas as equipes</option>
       <option v-for="o in opcoes?.equipes || []" :key="o.codigo" :value="String(o.codigo)">{{ o.nome }}</option>
     </select>
-    <button v-if="temRecorte" class="botao-link" @click="limparRecorte">Limpar filtros</button>
+    <button v-if="temRecorte" class="link-limpar" @click="limparRecorte">Limpar filtros</button>
   </section>
 
-  <HudPanel v-if="erro" class="painel-erro">
+  <section v-if="erro" class="cartao painel-erro">
     <h2>Painel indisponível</h2>
     <p>{{ erro.message }}</p>
     <p v-if="erro.rede" class="pequeno suave">Servidor de dados: <a :href="`${PAINEIS_URL}/saude`" target="_blank" rel="noopener">{{ PAINEIS_URL }}</a></p>
-    <button class="botao secundario" @click="carregar">Tentar de novo</button>
-  </HudPanel>
+    <button class="painel-botao" @click="carregar">Tentar de novo</button>
+  </section>
 
   <div v-else-if="dados" class="painel-grade" :class="{ carregando }">
     <section class="cartoes-indicadores">
@@ -138,56 +145,64 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       </article>
     </section>
 
-    <HudPanel titulo="OS abertas × executadas por mês" class="area-mensal">
+    <section class="cartao area-mensal">
+      <h2>OS abertas × executadas por mês</h2>
       <GraficoMensal :dados="dados.mensal" :series="[
         { campo: 'os_abertas', nome: 'OS abertas', cor: CORES.abertas },
         { campo: 'executadas_no_mes', nome: 'OS executadas no mês', cor: CORES.executadas },
       ]" />
-    </HudPanel>
+    </section>
 
-    <HudPanel titulo="Situação das OS" class="area-situacao">
+    <section class="cartao area-situacao">
+      <h2>Situação das OS</h2>
       <div class="barra-situacao" role="img" :aria-label="(dados.situacao || []).map((s) => `${s.nome} ${s.total}`).join(', ')">
         <i v-for="s in dados.situacao" :key="s.nome" :title="`${s.nome}: ${numero(s.total)}`"
-           :style="{ flexGrow: s.total, background: corSituacao[s.nome] || '#7d9bbb' }" />
+           :style="{ flexGrow: s.total, background: corSituacao[s.nome] || '#8a9bb0' }" />
       </div>
       <ul class="lista-situacao">
         <li v-for="s in dados.situacao" :key="s.nome">
-          <i :style="{ background: corSituacao[s.nome] || '#7d9bbb' }" />{{ s.nome }}
+          <i :style="{ background: corSituacao[s.nome] || '#8a9bb0' }" />{{ s.nome }}
           <b>{{ numero(s.total) }}</b><span class="suave">{{ pct(s.total, situacaoTotal) }}</span>
         </li>
       </ul>
       <h3 class="subtitulo">Motivos de reprogramação</h3>
-      <Ranking :itens="dados.motivos" cor="#ffc94d" detalhe="nenhum" />
-    </HudPanel>
+      <Ranking :itens="dados.motivos" :cor="CORES.atencao" detalhe="nenhum" />
+    </section>
 
-    <HudPanel titulo="Serviços mais pedidos" class="area-servicos">
-      <template #acao><span class="pequeno suave">clique para filtrar · mediana até executar</span></template>
-      <Ranking :itens="dados.servicos" clicavel :selecionado="sel('servico')" @escolher="(c) => alternar('servico', c)" />
-    </HudPanel>
+    <section class="cartao area-servicos">
+      <h2>Serviços mais pedidos</h2>
+      <p class="cartao-nota">clique para filtrar · mediana até executar</p>
+      <Ranking :itens="dados.servicos" :cor="CORES.abertas" clicavel :selecionado="sel('servico')" @escolher="(c) => alternar('servico', c)" />
+    </section>
 
-    <HudPanel titulo="O que o cidadão relatou" class="area-sintomas">
-      <template #acao><span class="pequeno suave">clique para filtrar</span></template>
-      <Ranking :itens="dados.sintomas" cor="#a78bfa" clicavel :selecionado="sel('sintoma')" @escolher="(c) => alternar('sintoma', c)" />
-    </HudPanel>
+    <section class="cartao area-sintomas">
+      <h2>O que o cidadão relatou</h2>
+      <p class="cartao-nota">clique para filtrar</p>
+      <Ranking :itens="dados.sintomas" :cor="CORES.executadas" clicavel :selecionado="sel('sintoma')" @escolher="(c) => alternar('sintoma', c)" />
+    </section>
 
-    <HudPanel titulo="Onde estão as ocorrências" class="area-mapa">
+    <section class="cartao area-mapa">
+      <h2>Onde estão as ocorrências</h2>
       <MapaPontos :pontos="dados.mapa" />
       <p class="pequeno suave">{{ pct(cobertura.com_coordenada, cobertura.total) }} das OS têm coordenada no SIMA. O ranking por bairro abaixo considera todas.</p>
-    </HudPanel>
+    </section>
 
-    <HudPanel titulo="Bairros" class="area-bairros">
-      <template #acao><span class="pequeno suave">clique para filtrar</span></template>
-      <Ranking :itens="dados.bairros" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
+    <section class="cartao area-bairros">
+      <h2>Bairros</h2>
+      <p class="cartao-nota">clique para filtrar</p>
+      <Ranking :itens="dados.bairros" :cor="CORES.abertas" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
       <h3 class="subtitulo">Regiões DMAE</h3>
-      <Ranking :itens="dados.regioes" clicavel :selecionado="sel('regiao')" @escolher="(c) => alternar('regiao', c)" />
-    </HudPanel>
+      <Ranking :itens="dados.regioes" :cor="CORES.abertas" clicavel :selecionado="sel('regiao')" @escolher="(c) => alternar('regiao', c)" />
+    </section>
 
-    <HudPanel titulo="Equipes que mais executaram" class="area-equipes">
-      <template #acao><span class="pequeno suave">só código · clique para filtrar</span></template>
-      <Ranking :itens="dados.equipes" cor="#a78bfa" clicavel :selecionado="sel('equipe')" @escolher="(c) => alternar('equipe', c)" />
-    </HudPanel>
+    <section class="cartao area-equipes">
+      <h2>Equipes que mais executaram</h2>
+      <p class="cartao-nota">só código · clique para filtrar</p>
+      <Ranking :itens="dados.equipes" :cor="CORES.executadas" clicavel :selecionado="sel('equipe')" @escolher="(c) => alternar('equipe', c)" />
+    </section>
 
-    <HudPanel titulo="Tabela mensal" class="area-tabela">
+    <section class="cartao area-tabela">
+      <h2>Tabela mensal</h2>
       <div class="tabela-rolagem">
         <table class="tabela-painel">
           <thead><tr><th>Mês</th><th>Solicitações</th><th>OS abertas</th><th>Executadas no mês</th><th>Reprogramadas</th><th>Mediana até executar</th></tr></thead>
@@ -200,9 +215,9 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
         </table>
       </div>
       <p class="pequeno suave">Solicitações, OS abertas e reprogramadas contam pelo mês da abertura; executadas, pelo mês da execução. Não inclui Corte OB e Religação OB.</p>
-    </HudPanel>
+    </section>
   </div>
 
-  <p v-else class="suave">Carregando o painel…</p>
+  <p v-else class="painel-carregando">Carregando o painel…</p>
 </div>
 </template>

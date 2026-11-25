@@ -8,7 +8,7 @@ const props = defineProps({
   series: { type: Array, required: true }, // [{ campo, nome, cor }]
 })
 
-const L = 720, A = 260, M = { e: 52, d: 16, t: 16, b: 30 }
+const L = 720, A = 260, M = { e: 52, d: 28, t: 16, b: 30 }
 const larg = L - M.e - M.d, alt = A - M.t - M.b
 
 const maximo = computed(() => {
@@ -57,7 +57,7 @@ const dicaEsq = computed(() => (foco.value === null ? 0 : (x(foco.value) / L) * 
         <g v-for="s in linhas" :key="s.campo">
           <path :d="s.d" fill="none" :stroke="s.cor" stroke-width="2" stroke-linejoin="round" />
           <circle v-for="(p, i) in dados" :key="p.mes" :cx="x(i)" :cy="y(p[s.campo])" :r="foco === i ? 5 : 3"
-                  :fill="s.cor" stroke="#061528" stroke-width="2" />
+                  :fill="s.cor" class="ponto-serie" />
         </g>
       </svg>
       <div v-if="dica" class="dica" :style="{ left: `${dicaEsq}%` }">
