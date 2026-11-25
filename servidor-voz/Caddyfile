@@ -8,7 +8,13 @@
 https://{$VOZ_ENDERECO} {
 	tls internal
 	encode gzip
-	reverse_proxy voz:8000
+	# Serviço de dados dos painéis (servidor-paineis/), na mesma rede Docker
+	handle_path /paineis/* {
+		reverse_proxy paineis:8000
+	}
+	handle {
+		reverse_proxy voz:8000
+	}
 	header -Server
 	log {
 		output stdout
