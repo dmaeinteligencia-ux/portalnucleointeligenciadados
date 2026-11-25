@@ -110,8 +110,8 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
   <header class="painel-cabecalho">
     <img src="/logo-dmae.png" alt="DMAE · Prefeitura de Uberlândia" class="painel-logo" />
     <div class="painel-titulo">
-      <h1>Solicitações e Execuções de Serviços</h1>
-      <p>Manutenção de Água · dados do SIMA</p>
+      <h1>Solicitações e Execuções de Serviços - Manutenção de Água</h1>
+      <p>Dados do SIMA · DMAE</p>
     </div>
     <p v-if="dados?.atualizacao?.executado_em" class="pequeno suave painel-atualizado">
       Dados de {{ dataHora(dados.atualizacao.executado_em) }}<br />atualizados a cada hora

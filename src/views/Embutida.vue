@@ -26,6 +26,7 @@ function aoReceberMensagem(evento) {
 
 onMounted(async () => {
   app.value = await obterAplicacao(route.params.slug)
+  if (app.value?.interno) return router.replace(app.value.url) // painel próprio não vai em quadro
   carregado.value = true
   if (app.value?.url) registrarAcesso(app.value)
   document.addEventListener('fullscreenchange', aoMudarTela)
