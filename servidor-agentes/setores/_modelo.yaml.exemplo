@@ -1,0 +1,12 @@
+# Copie para <id-do-setor>.yaml (ex.: comercial.yaml). O nome do arquivo vira o id do agente.
+# ATENÇÃO: este repositório é público. Não coloque senhas, dados pessoais ou informações sigilosas aqui.
+nome: Comercial
+descricao: Faturamento, arrecadação, ligações e inadimplência.
+# Esquemas do PostgreSQL que este agente pode explorar (deixe vazio para todos)
+esquemas:
+  - comercial
+# Opcional: modelo próprio para este agente (senão usa MODELO_PADRAO do .env)
+# modelo: gemini:gemini-flash-latest
+instrucoes: |
+  - "Ligação ativa" = ligação com situação 'A' na tabela comercial.ligacoes.
+  - Valores monetários estão em reais, sem impostos.

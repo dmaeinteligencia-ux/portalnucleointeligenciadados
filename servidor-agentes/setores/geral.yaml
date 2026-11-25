@@ -1,0 +1,6 @@
+# Agente piloto: enxerga todos os esquemas que o usuário do banco puder ler.
+# Quando os setores forem definidos, crie um arquivo por setor (copie _modelo.yaml.exemplo).
+nome: Piloto (todos os dados)
+descricao: Agente de teste com acesso de leitura a todo o banco, para validar o time antes de dividir por setor.
+instrucoes: |
+  Ainda não há regras de negócio cadastradas. Quando um termo for ambíguo, explique a interpretação usada.

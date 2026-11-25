@@ -36,6 +36,7 @@ O `vercel.json` já faz as rotas do Vue funcionarem ao recarregar a página.
 ## Novos sistemas e cadastro automático
 
 - `public/embutido.js`: script que cada sistema carrega para avisar o portal se o login funciona dentro dele.
+- `servidor-agentes/`: time de agentes de BI (coordenador + agentes de setor) que roda na rede interna. Veja [servidor-agentes/README.md](servidor-agentes/README.md).
 - `modelos/`: modelos Vue/Vite e Nuxt para novos sistemas. Veja [modelos/README.md](modelos/README.md).
 - `.github/workflows/sincronizar-aplicacoes.yml`: todo dia às 7h (ou pelo botão *Run workflow*) lê o `nucleo.json`
   de cada repositório da conta no GitHub e cadastra ou atualiza a aplicação no portal. Aplicação nova entra oculta.
