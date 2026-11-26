@@ -1,0 +1,22 @@
+# Time de agentes de BI. Uso (chat no terminal):
+#   cp .env.example .env   # e preencha
+#   docker compose run --rm agentes
+#   docker compose run --rm agentes python -m agentes.chat --agente geral
+name: agentes-nucleo
+
+services:
+  agentes:
+    build: .
+    env_file: .env
+    environment:
+      ARQUIVO_REGISTRO: /app/dados/registro.jsonl
+    volumes:
+      - ./dados:/app/dados
+      - ./setores:/app/setores:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
+    # O servidor tem pouca memória livre: limite baixo de propósito
+    mem_limit: 512m
+    cpus: 1
