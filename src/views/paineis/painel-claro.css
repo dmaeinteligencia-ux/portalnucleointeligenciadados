@@ -190,6 +190,10 @@
 .painel-claro .leaflet-container { font: inherit; }
 @media print { .painel-claro .mapa-bairros-area { break-inside: avoid; } }
 
+.painel-claro .mapa-bairros-modos { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; padding: .55rem .8rem; border-bottom: 1px solid var(--pc-linha); }
+.painel-claro .mapa-bairros-modos .suave { margin-left: .4rem; }
+.painel-claro .escala-calor { width: 120px; height: 10px; border-radius: 5px; opacity: 1 !important; border: 0 !important; background: linear-gradient(90deg, #a9c4e8, #4a7fc4, #d98a1c, #c2414b); }
+
 /* Mapa */
 .painel-claro .mapa-pontos svg { width: 100%; height: auto; display: block; margin-top: .6rem; }
 .painel-claro .mapa-fundo { fill: #f6f8fb; stroke: var(--pc-linha); }

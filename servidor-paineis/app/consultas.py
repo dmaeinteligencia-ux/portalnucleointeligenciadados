@@ -219,19 +219,36 @@ from contagem c left join posicao p using (cd_bairro)
 order by c.total desc
 """
 
-# Pontos do mapa: agregados na grade de ~100 m que as coordenadas já têm
+# Pontos do mapa (zoom aproximado e mapa de calor): OS somadas numa grade de ~100 m.
+# A posição vem de painel.mag_posicao: a coordenada da OS ou, sem ela, a estimada pela rua e
+# pelo número do imóvel (só a posição arredondada; o número não sai do banco).
 SQL_MAPA = f"""
-select latitude::float as lat, longitude::float as lon, count(*) as total
-from painel.mag_os
-{_ONDE} and latitude is not null and longitude is not null
+select p.lat::float as lat, p.lon::float as lon, count(*) as total
+from painel.mag_os o
+join painel.mag_posicao p using (cd_empresa, dt_ano, nr_ordem_servico)
+{_ONDE} and p.lat is not null
 group by 1, 2
 order by total desc
-limit 4000
+limit 8000
+"""
+
+# Ruas com mais OS no recorte (nome da rua e bairro, nunca o número)
+SQL_RUAS = f"""
+select cd_distrito, cd_logradouro, min(nm_logradouro) as nome, {NOME_BAIRRO} as bairro, count(*) as total,
+       count(*) filter (where executada) as executadas
+from painel.mag_os
+{_ONDE} and cd_logradouro is not null
+group by 1, 2
+order by total desc
+limit 15
 """
 
 SQL_COBERTURA_MAPA = f"""
-select count(*) filter (where latitude is not null) as com_coordenada, count(*) as total
-from painel.mag_os {_ONDE}
+select count(*) filter (where o.latitude is not null) as com_coordenada,
+       count(p.lat) as com_posicao, count(*) as total
+from painel.mag_os o
+left join painel.mag_posicao p using (cd_empresa, dt_ano, nr_ordem_servico)
+{_ONDE}
 """
 
 SQL_ATUALIZACAO = """
