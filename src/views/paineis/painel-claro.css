@@ -66,6 +66,10 @@
 .painel-claro select option { background: #fff; }
 .painel-claro .link-limpar { font: inherit; font-size: .88rem; font-weight: 600; color: var(--pc-azul); background: none; border: 0; cursor: pointer; }
 
+.painel-claro .painel-abas { display: flex; gap: .25rem; flex-wrap: wrap; margin: 0 0 1rem; border-bottom: 1px solid #dfe5ee; }
+.painel-claro .painel-abas button { font: inherit; font-size: .95rem; font-weight: 600; color: var(--pc-suave); background: none; border: 0; border-bottom: 3px solid transparent; padding: .6rem 1rem .55rem; margin-bottom: -1px; cursor: pointer; }
+.painel-claro .painel-abas button:hover { color: #0e50a0; }
+.painel-claro .painel-abas button.ativa { color: #0e50a0; border-bottom-color: #0e50a0; }
 .painel-claro .painel-grade { display: grid; gap: 1rem; grid-template-columns: repeat(12, minmax(0, 1fr)); transition: opacity .2s; }
 .painel-claro .painel-grade.carregando { opacity: .5; }
 .painel-claro .cartao { background: var(--pc-cartao); border: 1px solid var(--pc-linha); border-radius: 10px; padding: 1rem 1.1rem; box-shadow: 0 1px 2px rgba(16, 38, 66, 0.05); }

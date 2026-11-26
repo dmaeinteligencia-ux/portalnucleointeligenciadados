@@ -40,6 +40,17 @@ if (!f.fim) f.fim = iso(hoje)
 const atalhoAtivo = computed(() => (f.fim === iso(hoje) ? atalhos.find((a) => a.inicio() === f.inicio)?.id : null))
 const usarAtalho = (a) => { f.inicio = a.inicio(); f.fim = iso(hoje) }
 
+// Páginas do painel: os filtros valem para todas e ficam no endereço junto com a página
+const PAGINAS = [
+  { id: 'visao', nome: 'Visão geral' },
+  { id: 'onde', nome: 'Onde' },
+  { id: 'servicos', nome: 'Serviços e sintomas' },
+  { id: 'equipes', nome: 'Equipes e prazos' },
+]
+const pagina = ref(PAGINAS.some((p) => p.id === route.query.pagina) ? route.query.pagina : 'visao')
+const endereco = () => ({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), ...(pagina.value !== 'visao' ? { pagina: pagina.value } : {}) })
+watch(pagina, () => router.replace({ query: endereco() }))
+
 const opcoes = ref(null)
 const dados = ref(null)
 const carregando = ref(false)
@@ -60,7 +71,7 @@ async function carregar() {
 
 let espera
 watch(f, () => {
-  router.replace({ query: Object.fromEntries(Object.entries(f).filter(([, v]) => v)) })
+  router.replace({ query: endereco() })
   clearTimeout(espera)
   espera = setTimeout(carregar, 250)
 })
@@ -152,6 +163,10 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
     <button v-if="temRecorte" class="link-limpar" @click="limparRecorte">Limpar filtros</button>
   </section>
 
+  <nav class="painel-abas" aria-label="Páginas do painel">
+    <button v-for="p in PAGINAS" :key="p.id" :class="{ ativa: pagina === p.id }" :aria-current="pagina === p.id ? 'page' : null" @click="pagina = p.id">{{ p.nome }}</button>
+  </nav>
+
   <section v-if="erro" class="cartao painel-erro">
     <h2>Painel indisponível</h2>
     <p>{{ erro.message }}</p>
@@ -175,7 +190,7 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       </article>
     </section>
 
-    <section class="cartao area-mensal">
+    <section v-if="pagina === 'visao'" class="cartao area-mensal">
       <h2>OS abertas × executadas por mês</h2>
       <GraficoMensal :dados="dados.mensal" :series="[
         { campo: 'os_abertas', nome: 'OS abertas', cor: CORES.abertas, forma: 'coluna' },
@@ -183,40 +198,40 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       ]" />
     </section>
 
-    <section class="cartao area-situacao">
+    <section v-if="pagina === 'visao'" class="cartao area-situacao">
       <h2>Situação das OS</h2>
       <Rosca :itens="situacao" />
       <h3 class="subtitulo">Motivos de reprogramação</h3>
       <Ranking :itens="dados.motivos" :cor="CORES.atencao" detalhe="nenhum" estilo="pirulito" />
     </section>
 
-    <section class="cartao area-calor">
+    <section v-if="pagina === 'equipes'" class="cartao area-calor">
       <h2>Quando os pedidos chegam</h2>
       <p class="cartao-nota">OS abertas por dia da semana e hora</p>
       <MapaCalor :celulas="dados.semana_hora || []" />
     </section>
 
-    <section class="cartao area-tempo">
+    <section v-if="pagina === 'equipes'" class="cartao area-tempo">
       <h2>Quanto tempo levou para executar</h2>
       <p class="cartao-nota">OS executadas por faixa de tempo</p>
       <Colunas :itens="faixasTempo" />
       <p class="pequeno suave">Verde: até 24 h · azul: 1 a 5 dias · âmbar: mais de 5 dias.</p>
     </section>
 
-    <section class="cartao area-servicos">
+    <section v-if="pagina === 'servicos'" class="cartao area-servicos">
       <h2>Serviços mais pedidos</h2>
       <p class="cartao-nota">clique para filtrar · mediana até executar</p>
       <Ranking :itens="dados.servicos" :cor="CORES.abertas" clicavel :selecionado="sel('servico')" @escolher="(c) => alternar('servico', c)" />
     </section>
 
-    <section class="cartao area-sintomas">
+    <section v-if="pagina === 'servicos'" class="cartao area-sintomas">
       <h2>O que o cidadão relatou</h2>
       <p class="cartao-nota">clique num bloco para filtrar</p>
       <Treemap :itens="dados.sintomas" :cor="CORES.executadas" :selecionado="sel('sintoma')" @escolher="(c) => alternar('sintoma', c)" />
       <p class="pequeno suave">{{ sintomasResumo }} O tamanho do bloco é o volume.</p>
     </section>
 
-    <section class="cartao area-mapa">
+    <section v-if="pagina === 'onde'" class="cartao area-mapa">
       <h2>Onde estão as ocorrências</h2>
       <p class="cartao-nota">tamanho da bolha pela quantidade · clique para filtrar</p>
       <MapaBairros :itens="dados.bairros_mapa || []" :pontos="dados.mapa || []" :selecionado="f.bairro" :cor="CORES.abertas" @escolher="(c) => alternar('bairro', c)" />
@@ -227,7 +242,7 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       </p>
     </section>
 
-    <section class="cartao area-bairros">
+    <section v-if="pagina === 'onde'" class="cartao area-bairros">
       <h2>Bairros</h2>
       <p class="cartao-nota">clique para filtrar</p>
       <Ranking :itens="dados.bairros" :cor="CORES.abertas" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
@@ -235,26 +250,26 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <Multiplos :linhas="dados.regioes_mensal || []" :cor="CORES.abertas" :selecionado="f.regiao" @escolher="(c) => alternar('regiao', c)" />
     </section>
 
-    <section class="cartao area-ruas">
+    <section v-if="pagina === 'onde'" class="cartao area-ruas">
       <h2>Ruas com mais OS</h2>
       <p class="cartao-nota">15 ruas com mais OS no período · rua · bairro</p>
       <Ranking :itens="(dados.ruas || []).map((r) => ({ codigo: `${r.cd_distrito}-${r.cd_logradouro}`, nome: `${r.nome} · ${r.bairro}`, total: r.total }))" :cor="CORES.abertas" detalhe="nenhum" />
     </section>
 
-    <section class="cartao area-equipes">
+    <section v-if="pagina === 'equipes'" class="cartao area-equipes">
       <h2>Equipes: volume × rapidez</h2>
       <p class="cartao-nota">15 equipes com mais OS · só código</p>
       <Dispersao :itens="dados.equipes" :cor="CORES.executadas" :selecionado="sel('equipe')" @escolher="(c) => alternar('equipe', c)" />
     </section>
 
-    <section class="cartao area-idade">
+    <section v-if="pagina === 'equipes'" class="cartao area-idade">
       <h2>Há quanto tempo as pendentes esperam</h2>
       <p class="cartao-nota">OS em aberto agora, por idade</p>
       <Colunas :itens="idadeAbertas" />
       <p class="pequeno suave">Não depende do período escolhido, só dos outros filtros.</p>
     </section>
 
-    <section class="cartao area-tabela">
+    <section v-if="pagina === 'visao'" class="cartao area-tabela">
       <h2>Tabela mensal</h2>
       <div class="tabela-rolagem">
         <table class="tabela-painel">
