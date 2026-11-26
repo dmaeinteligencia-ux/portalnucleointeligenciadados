@@ -112,7 +112,7 @@ function demoPainel(caminho, params) {
     indicadores: {
       solicitacoes: soma('solicitacoes'), os_abertas: os, executadas: Math.round(os * 0.82), reprogramadas: soma('reprogramadas'),
       canceladas: Math.round(os * 0.003), com_prazo: Math.round(os * 0.7), no_prazo: Math.round(os * 0.46),
-      mediana_horas: 14.5, p90_horas: 140, executadas_no_periodo: soma('executadas_no_mes'), em_aberto_agora: 612, em_aberto_48h: 97,
+      mediana_horas: 14.5, p90_horas: 140, executadas_no_periodo: soma('executadas_no_mes'), em_aberto_agora: 612, em_aberto_48h: 97, em_aberto_anteriores: 41,
     },
     mensal,
     situacao: [{ nome: 'Executada', total: Math.round(os * 0.82) }, { nome: 'Reprogramada', total: Math.round(os * 0.14) },

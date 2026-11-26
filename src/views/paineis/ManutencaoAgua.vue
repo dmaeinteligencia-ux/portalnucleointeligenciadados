@@ -81,7 +81,7 @@ const cartoes = computed(() => {
     { rotulo: 'Tempo até executar', valor: horas(i.mediana_horas), nota: `metade sai até esse tempo · 90% até ${horas(i.p90_horas)}`, faisca: serie('mediana_horas') },
     { rotulo: 'No prazo', valor: pct(i.no_prazo, i.com_prazo), nota: `das executadas com prazo definido (${numero(i.com_prazo)})`, medidor: i.com_prazo ? i.no_prazo / i.com_prazo : null },
     { rotulo: 'Reprogramadas', valor: pct(i.reprogramadas, i.os_abertas), nota: `${numero(i.reprogramadas)} OS`, faisca: serie('reprogramadas'), cor: CORES.atencao },
-    { rotulo: 'Em aberto agora', valor: numero(i.em_aberto_agora), nota: `${numero(i.em_aberto_48h)} há mais de 48 h`, alerta: i.em_aberto_48h > 0 },
+    { rotulo: 'Em aberto agora', valor: numero(i.em_aberto_agora), nota: i.em_aberto_anteriores > 0 ? `${numero(i.em_aberto_agora - i.em_aberto_anteriores)} do período + ${numero(i.em_aberto_anteriores)} anteriores · ${numero(i.em_aberto_48h)} há mais de 48 h` : `${numero(i.em_aberto_48h)} há mais de 48 h`, alerta: i.em_aberto_48h > 0 },
   ]
 })
 const corSituacao = { Executada: '#2f9e72', Reprogramada: '#d98a1c', Programada: '#0e50a0', Aguardando: '#8a9bb0', Cancelada: '#c2414b', Duplicidade: '#c2414b', Parcelada: '#6c8ebf' }
