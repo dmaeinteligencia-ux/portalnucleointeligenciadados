@@ -7,7 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import './painel-claro.css'
 import GraficoMensal from '../../components/graficos/GraficoMensal.vue'
 import Ranking from '../../components/graficos/Ranking.vue'
-import MapaPontos from '../../components/graficos/MapaPontos.vue'
+import MapaBairros from '../../components/graficos/MapaBairros.vue'
 import Faisca from '../../components/graficos/Faisca.vue'
 import Rosca from '../../components/graficos/Rosca.vue'
 import MapaCalor from '../../components/graficos/MapaCalor.vue'
@@ -215,8 +215,9 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
 
     <section class="cartao area-mapa">
       <h2>Onde estão as ocorrências</h2>
-      <MapaPontos :pontos="dados.mapa" />
-      <p class="pequeno suave">{{ pct(cobertura.com_coordenada, cobertura.total) }} das OS têm coordenada no SIMA. O ranking por bairro abaixo considera todas.</p>
+      <p class="cartao-nota">tamanho da bolha pela quantidade · clique para filtrar</p>
+      <MapaBairros :itens="dados.bairros_mapa || []" :selecionado="f.bairro" :cor="CORES.abertas" @escolher="(c) => alternar('bairro', c)" />
+      <p class="pequeno suave">Cada bairro fica no ponto central das suas OS com coordenada ({{ pct(cobertura.com_coordenada, cobertura.total) }} das OS têm coordenada no SIMA).</p>
     </section>
 
     <section class="cartao area-bairros">

@@ -182,6 +182,33 @@ where em_aberto and {_RECORTE}
 group by 1 order by 1
 """
 
+# Mapa de bolhas por bairro: a posição de cada bairro é o ponto mediano das OS com coordenada
+# (todas desde 2020, para não mudar com o filtro); o tamanho é a quantidade de OS no recorte.
+# Só entram coordenadas dentro do município (descarta lat/long trocadas e lixo).
+SQL_BAIRROS_MAPA = f"""
+with posicao as (
+  select cd_bairro,
+         percentile_cont(0.5) within group (order by latitude)  as lat,
+         percentile_cont(0.5) within group (order by longitude) as lon
+  from painel.mag_os
+  where cd_bairro is not null and latitude between -19.60 and -18.40 and longitude between -48.95 and -47.60
+  group by 1
+  having count(*) >= 3
+), contagem as (
+  select cd_bairro, nm_bairro, count(*) as total,
+         count(*) filter (where executada) as executadas,
+         percentile_cont(0.5) within group (order by horas_ate_execucao)
+           filter (where executada and horas_ate_execucao is not null) as mediana_horas
+  from painel.mag_os
+  {_ONDE} and cd_bairro is not null
+  group by 1, 2
+)
+select c.cd_bairro as codigo, c.nm_bairro as nome, c.total, c.executadas, c.mediana_horas,
+       p.lat::float as lat, p.lon::float as lon
+from contagem c left join posicao p using (cd_bairro)
+order by c.total desc
+"""
+
 # Pontos do mapa: agregados na grade de ~100 m que as coordenadas já têm
 SQL_MAPA = f"""
 select latitude::float as lat, longitude::float as lon, count(*) as total
