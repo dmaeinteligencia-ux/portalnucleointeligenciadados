@@ -92,11 +92,12 @@
 .painel-claro .indicador.alerta strong { color: var(--pc-ambar); }
 
 .painel-claro .area-mensal { grid-column: span 8; } .painel-claro .area-situacao { grid-column: span 4; }
-.painel-claro .area-calor { grid-column: span 7; } .painel-claro .area-tempo { grid-column: span 5; }
-.painel-claro .area-servicos, .painel-claro .area-sintomas { grid-column: span 6; }
+.painel-claro .area-tempo, .painel-claro .area-idade { grid-column: span 6; } .painel-claro .area-calor { grid-column: 1 / -1; }
+.painel-claro .area-calor .mapa-calor svg, .painel-claro .area-equipes .dispersao svg { max-width: 1000px; margin-inline: auto; }
+.painel-claro .area-servicos, .painel-claro .area-sintomas { grid-column: span 6; } .painel-claro .area-motivos { grid-column: 1 / -1; }
 .painel-claro .area-mapa { grid-column: 1 / -1; }
 .painel-claro .area-bairros, .painel-claro .area-ruas { grid-column: span 6; }
-.painel-claro .area-equipes { grid-column: span 7; } .painel-claro .area-idade { grid-column: span 5; }
+.painel-claro .area-equipes { grid-column: 1 / -1; }
 .painel-claro .area-tabela { grid-column: 1 / -1; }
 
 /* Minigráfico e medidor nos cartões */

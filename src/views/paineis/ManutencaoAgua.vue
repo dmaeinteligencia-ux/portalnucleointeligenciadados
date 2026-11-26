@@ -43,13 +43,19 @@ const usarAtalho = (a) => { f.inicio = a.inicio(); f.fim = iso(hoje) }
 // Páginas do painel: os filtros valem para todas e ficam no endereço junto com a página
 const PAGINAS = [
   { id: 'visao', nome: 'Visão geral' },
-  { id: 'onde', nome: 'Onde' },
-  { id: 'servicos', nome: 'Serviços e sintomas' },
-  { id: 'equipes', nome: 'Equipes e prazos' },
+  { id: 'prazos', nome: 'Atendimento e prazos' },
+  { id: 'mapa', nome: 'Mapa' },
+  { id: 'servicos', nome: 'Serviços e causas' },
+  { id: 'equipes', nome: 'Equipes' },
 ]
-const pagina = ref(PAGINAS.some((p) => p.id === route.query.pagina) ? route.query.pagina : 'visao')
-const endereco = () => ({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), ...(pagina.value !== 'visao' ? { pagina: pagina.value } : {}) })
-watch(pagina, () => router.replace({ query: endereco() }))
+// Cada página tem endereço próprio (/paineis/manutencao-agua/mapa) e leva os filtros junto
+const pagina = ref(PAGINAS.some((p) => p.id === route.params.pagina) ? route.params.pagina : 'visao')
+const endereco = () => ({
+  path: `/paineis/manutencao-agua${pagina.value !== 'visao' ? `/${pagina.value}` : ''}`,
+  query: Object.fromEntries(Object.entries(f).filter(([, v]) => v)),
+})
+watch(pagina, () => router.replace(endereco()))
+watch(() => route.params.pagina, (p) => { pagina.value = PAGINAS.some((x) => x.id === p) ? p : 'visao' })
 
 const opcoes = ref(null)
 const dados = ref(null)
@@ -71,7 +77,7 @@ async function carregar() {
 
 let espera
 watch(f, () => {
-  router.replace({ query: endereco() })
+  router.replace(endereco())
   clearTimeout(espera)
   espera = setTimeout(carregar, 250)
 })
@@ -201,17 +207,15 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
     <section v-if="pagina === 'visao'" class="cartao area-situacao">
       <h2>Situação das OS</h2>
       <Rosca :itens="situacao" />
-      <h3 class="subtitulo">Motivos de reprogramação</h3>
-      <Ranking :itens="dados.motivos" :cor="CORES.atencao" detalhe="nenhum" estilo="pirulito" />
     </section>
 
-    <section v-if="pagina === 'equipes'" class="cartao area-calor">
+    <section v-if="pagina === 'prazos'" class="cartao area-calor">
       <h2>Quando os pedidos chegam</h2>
       <p class="cartao-nota">OS abertas por dia da semana e hora</p>
       <MapaCalor :celulas="dados.semana_hora || []" />
     </section>
 
-    <section v-if="pagina === 'equipes'" class="cartao area-tempo">
+    <section v-if="pagina === 'prazos'" class="cartao area-tempo">
       <h2>Quanto tempo levou para executar</h2>
       <p class="cartao-nota">OS executadas por faixa de tempo</p>
       <Colunas :itens="faixasTempo" />
@@ -231,7 +235,13 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <p class="pequeno suave">{{ sintomasResumo }} O tamanho do bloco é o volume.</p>
     </section>
 
-    <section v-if="pagina === 'onde'" class="cartao area-mapa">
+    <section v-if="pagina === 'servicos'" class="cartao area-motivos">
+      <h2>Motivos de reprogramação</h2>
+      <p class="cartao-nota">OS reprogramadas no período, pelo motivo informado</p>
+      <Ranking :itens="dados.motivos" :cor="CORES.atencao" detalhe="nenhum" estilo="pirulito" />
+    </section>
+
+    <section v-if="pagina === 'mapa'" class="cartao area-mapa">
       <h2>Onde estão as ocorrências</h2>
       <p class="cartao-nota">tamanho da bolha pela quantidade · clique para filtrar</p>
       <MapaBairros :itens="dados.bairros_mapa || []" :pontos="dados.mapa || []" :selecionado="f.bairro" :cor="CORES.abertas" @escolher="(c) => alternar('bairro', c)" />
@@ -242,7 +252,7 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       </p>
     </section>
 
-    <section v-if="pagina === 'onde'" class="cartao area-bairros">
+    <section v-if="pagina === 'mapa'" class="cartao area-bairros">
       <h2>Bairros</h2>
       <p class="cartao-nota">clique para filtrar</p>
       <Ranking :itens="dados.bairros" :cor="CORES.abertas" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
@@ -250,7 +260,7 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <Multiplos :linhas="dados.regioes_mensal || []" :cor="CORES.abertas" :selecionado="f.regiao" @escolher="(c) => alternar('regiao', c)" />
     </section>
 
-    <section v-if="pagina === 'onde'" class="cartao area-ruas">
+    <section v-if="pagina === 'mapa'" class="cartao area-ruas">
       <h2>Ruas com mais OS</h2>
       <p class="cartao-nota">15 ruas com mais OS no período · rua · bairro</p>
       <Ranking :itens="(dados.ruas || []).map((r) => ({ codigo: `${r.cd_distrito}-${r.cd_logradouro}`, nome: `${r.nome} · ${r.bairro}`, total: r.total }))" :cor="CORES.abertas" detalhe="nenhum" />
@@ -262,7 +272,7 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <Dispersao :itens="dados.equipes" :cor="CORES.executadas" :selecionado="sel('equipe')" @escolher="(c) => alternar('equipe', c)" />
     </section>
 
-    <section v-if="pagina === 'equipes'" class="cartao area-idade">
+    <section v-if="pagina === 'prazos'" class="cartao area-idade">
       <h2>Há quanto tempo as pendentes esperam</h2>
       <p class="cartao-nota">OS em aberto agora, por idade</p>
       <Colunas :itens="idadeAbertas" />
