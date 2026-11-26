@@ -222,8 +222,11 @@ order by c.total desc
 # Pontos do mapa (zoom aproximado e mapa de calor): OS somadas numa grade de ~100 m.
 # A posição vem de painel.mag_posicao: a coordenada da OS ou, sem ela, a estimada pela rua e
 # pelo número do imóvel (só a posição arredondada; o número não sai do banco).
+# total_preciso deixa de fora as OS posicionadas só pelo meio da rua (erro típico de ~120 m,
+# às vezes centenas): elas entram no mapa de calor, mas não nos pontos do zoom.
 SQL_MAPA = f"""
-select p.lat::float as lat, p.lon::float as lon, count(*) as total
+select p.lat::float as lat, p.lon::float as lon, count(*) as total,
+       count(*) filter (where p.origem <> 'rua') as total_preciso
 from painel.mag_os o
 join painel.mag_posicao p using (cd_empresa, dt_ano, nr_ordem_servico)
 {_ONDE} and p.lat is not null

@@ -10,7 +10,7 @@ import { numero, pct, horas } from '../../lib/paineis'
 
 const props = defineProps({
   itens: { type: Array, required: true }, // [{ codigo, nome, total, executadas, mediana_horas, lat, lon }]
-  pontos: { type: Array, default: () => [] }, // [{ lat, lon, total }] na grade de ~100 m
+  pontos: { type: Array, default: () => [] }, // [{ lat, lon, total, total_preciso }] na grade de ~100 m
   selecionado: { type: [Number, String], default: null },
   cor: { type: String, default: '#0e50a0' },
 })
@@ -36,7 +36,11 @@ const ZOOM_PONTOS = 14
 const modo = ref('bolhas') // 'bolhas' | 'calor'
 const zoom = ref(12)
 const emPontos = computed(() => modo.value === 'bolhas' && zoom.value >= ZOOM_PONTOS)
-const maxPonto = computed(() => Math.max(1, ...props.pontos.map((p) => p.total)))
+// Nos pontos só entram as OS com posição boa (coordenada ou rua + número); as estimadas só pelo
+// meio da rua ficam para o mapa de calor
+const preciso = (p) => p.total_preciso ?? p.total
+const pontosPrecisos = computed(() => props.pontos.filter((p) => preciso(p) > 0))
+const maxPonto = computed(() => Math.max(1, ...pontosPrecisos.value.map(preciso)))
 // Referência do calor: o percentil 95, para um único ponto muito cheio não apagar o resto
 const refCalor = computed(() => {
   const v = props.pontos.map((p) => p.total).sort((a, b) => a - b)
@@ -51,11 +55,11 @@ function desenharPontos() {
   if (!mapa || !camadaPontos) return
   camadaPontos.clearLayers()
   if (!emPontos.value) return
-  for (const p of props.pontos) {
+  for (const p of pontosPrecisos.value) {
     L.circleMarker([p.lat, p.lon], {
-      radius: 2.5 + Math.sqrt(p.total / maxPonto.value) * 7, color: '#ffffff', weight: 0.5,
+      radius: 2.5 + Math.sqrt(preciso(p) / maxPonto.value) * 7, color: '#ffffff', weight: 0.5,
       fillColor: props.cor, fillOpacity: 0.65,
-    }).bindTooltip(`<b>${numero(p.total)} OS</b> neste ponto (≈100 m)`, { direction: 'top' }).addTo(camadaPontos)
+    }).bindTooltip(`<b>${numero(preciso(p))} OS</b> neste ponto (≈100 m)`, { direction: 'top' }).addTo(camadaPontos)
   }
 }
 
@@ -131,7 +135,7 @@ watch([noMapa, () => props.selecionado, () => props.pontos, modo, emPontos], des
       <div v-if="modo === 'calor'" class="mapa-bairros-legenda calor" aria-hidden="true">
         <span>menos</span><i class="escala-calor" /><span>mais OS</span>
       </div>
-      <div v-else-if="emPontos" class="mapa-bairros-legenda" aria-hidden="true"><span>Cada ponto soma as OS de ~100 m ao redor.</span></div>
+      <div v-else-if="emPontos" class="mapa-bairros-legenda" aria-hidden="true"><span>Cada ponto soma as OS de ~100 m ao redor. OS sem número do imóvel ficam só no mapa de calor.</span></div>
       <div v-else-if="legenda.length" class="mapa-bairros-legenda" aria-hidden="true">
         <span>OS</span>
         <span v-for="n in legenda" :key="n">

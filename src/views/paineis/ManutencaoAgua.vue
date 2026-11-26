@@ -218,8 +218,9 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <p class="cartao-nota">tamanho da bolha pela quantidade · clique para filtrar</p>
       <MapaBairros :itens="dados.bairros_mapa || []" :pontos="dados.mapa || []" :selecionado="f.bairro" :cor="CORES.abertas" @escolher="(c) => alternar('bairro', c)" />
       <p class="pequeno suave">
-        Cada bairro fica no ponto central das suas OS com coordenada. Nos pontos e no calor entram {{ pct(cobertura.com_posicao ?? cobertura.com_coordenada, cobertura.total) }} das OS:
-        as que têm coordenada no SIMA ({{ pct(cobertura.com_coordenada, cobertura.total) }}) e as posicionadas pela rua e pelo número do imóvel.
+        Cada bairro fica no ponto central das suas OS com coordenada. No mapa de calor entram {{ pct(cobertura.com_posicao ?? cobertura.com_coordenada, cobertura.total) }} das OS:
+        as que têm coordenada no SIMA ({{ pct(cobertura.com_coordenada, cobertura.total) }}) e as posicionadas pelo endereço (erro típico de ~30 m com o número do imóvel).
+        Nos pontos do zoom ficam de fora as que só têm a rua, sem número.
       </p>
     </section>
 
