@@ -107,7 +107,17 @@ order by 1
 """
 
 
+# Alguns bairros aparecem com dois nomes no SIMA para o mesmo código (ex.: os distritos 200-203,
+# "TAPUIRAMA (DISTRITO)" e "DISTRITO TAPUIRAMA"). O código é o mesmo lugar, então agrupamos só
+# pelo código e usamos o nome mais comum entre as OS com coordenada (ou, sem nenhuma, o mais comum).
+NOME_BAIRRO = (
+    "coalesce(mode() within group (order by nm_bairro) filter (where latitude is not null), "
+    "mode() within group (order by nm_bairro))"
+)
+
+
 def _ranking(codigo: str, nome: str, limite: int, extra_where: str = "") -> str:
+    """Ranking agrupado só pelo código; `nome` é uma expressão agregada (um nome por código)."""
     return f"""
 select {codigo} as codigo, {nome} as nome, count(*) as total,
        count(*) filter (where executada) as executadas,
@@ -116,15 +126,15 @@ select {codigo} as codigo, {nome} as nome, count(*) as total,
          filter (where executada and horas_ate_execucao is not null) as mediana_horas
 from painel.mag_os
 {_ONDE} {extra_where}
-group by 1, 2
+group by 1
 order by total desc, 2
 limit {int(limite)}
 """
 
 
-SQL_SERVICOS = _ranking("cd_servico", "ds_servico", 12)
-SQL_SINTOMAS = _ranking("cd_sintoma", "ds_sintoma", 12, "and cd_sintoma is not null")
-SQL_BAIRROS = _ranking("cd_bairro", "nm_bairro", 15, "and cd_bairro is not null")
+SQL_SERVICOS = _ranking("cd_servico", "min(ds_servico)", 12)
+SQL_SINTOMAS = _ranking("cd_sintoma", "min(ds_sintoma)", 12, "and cd_sintoma is not null")
+SQL_BAIRROS = _ranking("cd_bairro", NOME_BAIRRO, 15, "and cd_bairro is not null")
 SQL_EQUIPES = _ranking("cd_equipe", "'Equipe ' || cd_equipe", 15, "and cd_equipe is not null")
 SQL_REGIOES = _ranking("cd_regiao_dmae::int", "coalesce('Região ' || cd_regiao_dmae::int, 'Sem região')", 10)
 
@@ -195,13 +205,13 @@ with posicao as (
   group by 1
   having count(*) >= 3
 ), contagem as (
-  select cd_bairro, nm_bairro, count(*) as total,
+  select cd_bairro, {NOME_BAIRRO} as nm_bairro, count(*) as total,
          count(*) filter (where executada) as executadas,
          percentile_cont(0.5) within group (order by horas_ate_execucao)
            filter (where executada and horas_ate_execucao is not null) as mediana_horas
   from painel.mag_os
   {_ONDE} and cd_bairro is not null
-  group by 1, 2
+  group by 1
 )
 select c.cd_bairro as codigo, c.nm_bairro as nome, c.total, c.executadas, c.mediana_horas,
        p.lat::float as lat, p.lon::float as lon
@@ -246,10 +256,10 @@ select cd_sintoma as codigo, ds_sintoma as nome, count(*) as total
 from painel.mag_os where dt_solicitacao >= now() - interval '24 months' and cd_sintoma is not null
 group by 1, 2 order by 2
 """
-SQL_OPCOES_BAIRROS = """
-select cd_bairro as codigo, nm_bairro as nome, count(*) as total
+SQL_OPCOES_BAIRROS = f"""
+select cd_bairro as codigo, {NOME_BAIRRO} as nome, count(*) as total
 from painel.mag_os where dt_solicitacao >= now() - interval '24 months' and cd_bairro is not null
-group by 1, 2 order by 2
+group by 1 order by 2
 """
 SQL_OPCOES_REGIOES = """
 select distinct cd_regiao_dmae::int as codigo, 'Região ' || cd_regiao_dmae::int as nome
