@@ -216,14 +216,20 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
     <section class="cartao area-mapa">
       <h2>Onde estão as ocorrências</h2>
       <p class="cartao-nota">tamanho da bolha pela quantidade · clique para filtrar</p>
-      <MapaBairros :itens="dados.bairros_mapa || []" :selecionado="f.bairro" :cor="CORES.abertas" @escolher="(c) => alternar('bairro', c)" />
-      <p class="pequeno suave">Cada bairro fica no ponto central das suas OS com coordenada ({{ pct(cobertura.com_coordenada, cobertura.total) }} das OS têm coordenada no SIMA).</p>
+      <MapaBairros :itens="dados.bairros_mapa || []" :pontos="dados.mapa || []" :selecionado="f.bairro" :cor="CORES.abertas" @escolher="(c) => alternar('bairro', c)" />
+      <p class="pequeno suave">
+        Cada bairro fica no ponto central das suas OS com coordenada. No mapa de calor entram {{ pct(cobertura.com_posicao ?? cobertura.com_coordenada, cobertura.total) }} das OS:
+        as que têm coordenada no SIMA ({{ pct(cobertura.com_coordenada, cobertura.total) }}) e as posicionadas pelo endereço (erro típico de ~30 m com o número do imóvel).
+        Nos pontos do zoom ficam de fora as que só têm a rua, sem número.
+      </p>
     </section>
 
     <section class="cartao area-bairros">
       <h2>Bairros</h2>
       <p class="cartao-nota">clique para filtrar</p>
       <Ranking :itens="dados.bairros" :cor="CORES.abertas" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
+      <h3 class="subtitulo">Ruas com mais OS</h3>
+      <Ranking :itens="(dados.ruas || []).map((r) => ({ codigo: `${r.cd_distrito}-${r.cd_logradouro}`, nome: `${r.nome} · ${r.bairro}`, total: r.total }))" :cor="CORES.abertas" detalhe="nenhum" />
       <h3 class="subtitulo">Regiões DMAE</h3>
       <Multiplos :linhas="dados.regioes_mensal || []" :cor="CORES.abertas" :selecionado="f.regiao" @escolher="(c) => alternar('regiao', c)" />
     </section>

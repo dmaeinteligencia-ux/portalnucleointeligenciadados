@@ -262,6 +262,7 @@ def dados(
                 "idade_abertas": _linhas(cur, q.SQL_IDADE_ABERTAS, p),
                 "mapa": _linhas(cur, q.SQL_MAPA, p),
                 "bairros_mapa": _linhas(cur, q.SQL_BAIRROS_MAPA, p),
+                "ruas": _linhas(cur, q.SQL_RUAS, p),
                 "cobertura_mapa": _uma(cur, q.SQL_COBERTURA_MAPA, p),
             }
 

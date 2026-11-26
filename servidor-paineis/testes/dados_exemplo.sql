@@ -36,3 +36,16 @@ select 1 as cd_empresa, extract(year from dt_solicitacao)::int as dt_ano, g::big
        case when g % 2 = 0 then round((-18.92 + (random() - .5) * .12)::numeric, 3) end as latitude,
        case when g % 2 = 0 then round((-48.28 + (random() - .5) * .14)::numeric, 3) end as longitude
 from base;
+
+-- Posição estimada (fictícia): a coordenada da OS ou, sem ela, a mediana da rua
+create table painel.mag_posicao as
+with rua as (
+  select cd_distrito, cd_logradouro,
+         round(percentile_cont(0.5) within group (order by latitude)::numeric, 3) as lat,
+         round(percentile_cont(0.5) within group (order by longitude)::numeric, 3) as lon
+  from painel.mag_os where latitude is not null group by 1, 2
+)
+select o.cd_empresa, o.dt_ano, o.nr_ordem_servico,
+       coalesce(o.latitude, r.lat) as lat, coalesce(o.longitude, r.lon) as lon,
+       case when o.latitude is not null then 'coordenada' when r.lat is not null then 'rua' end as origem
+from painel.mag_os o left join rua r using (cd_distrito, cd_logradouro);

@@ -113,7 +113,8 @@ function demoPainel(caminho, params) {
     servicos: lista('Serviço', 12, 9000), sintomas: lista('Sintoma', 12, 8000),
     motivos: lista('Motivo', 6, 6000).map(({ codigo, nome, total }) => ({ codigo, nome, total })),
     bairros: lista('Bairro', 15, 3000), regioes: lista('Região', 3, 30000), equipes: lista('Equipe', 15, 6000),
-    mapa, cobertura_mapa: { com_coordenada: Math.round(os * 0.53), total: os },
+    mapa, cobertura_mapa: { com_coordenada: Math.round(os * 0.53), com_posicao: Math.round(os * 0.96), total: os },
+    ruas: Array.from({ length: 15 }, (_, i) => ({ cd_distrito: 0, cd_logradouro: i + 1, nome: `RUA ${i + 1}`, bairro: `BAIRRO ${(i % 9) + 1}`, total: Math.round(900 / (i + 1.4)), executadas: 0 })),
     bairros_mapa: Array.from({ length: 60 }, (_, i) => {
       const t = Math.round(3000 / (i + 1.3)), ang = r() * Math.PI * 2, dist = 0.01 + r() * 0.05
       return { codigo: i + 1, nome: `Bairro ${i + 1}`, total: t, executadas: Math.round(t * 0.82), mediana_horas: 8 + r() * 30,
