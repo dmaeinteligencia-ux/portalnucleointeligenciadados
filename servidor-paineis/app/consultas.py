@@ -75,7 +75,8 @@ where executada and {_PERIODO_EXEC} and {_RECORTE}
 
 SQL_EM_ABERTO_AGORA = f"""
 select count(*) as em_aberto_agora,
-       count(*) filter (where dt_solicitacao < now() - interval '48 hours') as em_aberto_48h
+       count(*) filter (where dt_solicitacao < now() - interval '48 hours') as em_aberto_48h,
+       count(*) filter (where dt_solicitacao < %(inicio)s)                  as em_aberto_anteriores
 from painel.mag_os
 where em_aberto and {_RECORTE}
 """
