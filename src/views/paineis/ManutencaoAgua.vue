@@ -155,6 +155,9 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
   <section v-if="erro" class="cartao painel-erro">
     <h2>Painel indisponível</h2>
     <p>{{ erro.message }}</p>
+    <ul v-if="erro.dicas?.length" class="painel-erro-dicas">
+      <li v-for="d in erro.dicas" :key="d">{{ d }}</li>
+    </ul>
     <p v-if="erro.rede" class="pequeno suave">Servidor de dados: <a :href="`${PAINEIS_URL}/saude`" target="_blank" rel="noopener">{{ PAINEIS_URL }}</a></p>
     <button class="painel-botao" @click="carregar">Tentar de novo</button>
   </section>

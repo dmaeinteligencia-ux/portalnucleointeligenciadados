@@ -74,6 +74,8 @@
 .painel-claro .cartao h2 + :not(.cartao-nota) { margin-top: .7rem; }
 .painel-claro .subtitulo { font-size: .85rem; font-weight: 600; color: var(--pc-suave); margin: 1.1rem 0 .5rem; }
 .painel-claro .painel-erro { max-width: 720px; }
+.painel-claro .painel-erro-dicas { margin: 0 0 12px; padding-left: 20px; line-height: 1.5; }
+.painel-claro .painel-erro-dicas li + li { margin-top: 6px; }
 .painel-claro .painel-carregando { color: var(--pc-suave); }
 .painel-claro .suave { color: var(--pc-suave); }
 .painel-claro .pequeno { font-size: .82rem; }

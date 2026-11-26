@@ -8,9 +8,10 @@ import { supabase, modoDemo } from './supabase'
 export const PAINEIS_URL = (import.meta.env.VITE_PAINEIS_URL || 'https://172.22.1.200/paineis').replace(/\/$/, '')
 
 export class ErroPainel extends Error {
-  constructor(mensagem, { rede = false } = {}) {
+  constructor(mensagem, { rede = false, dicas = [] } = {}) {
     super(mensagem)
     this.rede = rede
+    this.dicas = dicas
   }
 }
 
@@ -28,9 +29,15 @@ export async function buscarPainel(caminho, params = {}) {
     r = await fetch(url, { headers: { Authorization: `Bearer ${await token()}` } })
   } catch {
     throw new ErroPainel(
-      'Não foi possível falar com o servidor de dados. Os painéis só abrem dentro da rede do DMAE (ou pela VPN). ' +
-      'Se você já está na rede, abra uma vez o endereço do servidor e aceite o certificado.',
-      { rede: true },
+      'Não foi possível falar com o servidor de dados. Isso costuma ter uma destas causas:',
+      {
+        rede: true,
+        dicas: [
+          'O computador está fora da rede do DMAE. Fora dela, os painéis só abrem pela VPN.',
+          'O certificado do servidor de dados não está instalado neste computador. Peça ao Núcleo de Inteligência de Dados o instalador do certificado (leva 1 minuto e não precisa de administrador).',
+          'O navegador bloqueou o acesso à rede local. Clique no cadeado ao lado do endereço do portal e permita o acesso à rede local.',
+        ],
+      },
     )
   }
   if (!r.ok) {
