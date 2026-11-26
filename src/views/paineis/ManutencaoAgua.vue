@@ -155,6 +155,9 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
   <section v-if="erro" class="cartao painel-erro">
     <h2>Painel indisponível</h2>
     <p>{{ erro.message }}</p>
+    <ul v-if="erro.dicas?.length" class="painel-erro-dicas">
+      <li v-for="d in erro.dicas" :key="d">{{ d }}</li>
+    </ul>
     <p v-if="erro.rede" class="pequeno suave">Servidor de dados: <a :href="`${PAINEIS_URL}/saude`" target="_blank" rel="noopener">{{ PAINEIS_URL }}</a></p>
     <button class="painel-botao" @click="carregar">Tentar de novo</button>
   </section>
@@ -228,10 +231,14 @@ const cobertura = computed(() => dados.value?.cobertura_mapa || {})
       <h2>Bairros</h2>
       <p class="cartao-nota">clique para filtrar</p>
       <Ranking :itens="dados.bairros" :cor="CORES.abertas" clicavel :selecionado="sel('bairro')" @escolher="(c) => alternar('bairro', c)" />
-      <h3 class="subtitulo">Ruas com mais OS</h3>
-      <Ranking :itens="(dados.ruas || []).map((r) => ({ codigo: `${r.cd_distrito}-${r.cd_logradouro}`, nome: `${r.nome} · ${r.bairro}`, total: r.total }))" :cor="CORES.abertas" detalhe="nenhum" />
       <h3 class="subtitulo">Regiões DMAE</h3>
       <Multiplos :linhas="dados.regioes_mensal || []" :cor="CORES.abertas" :selecionado="f.regiao" @escolher="(c) => alternar('regiao', c)" />
+    </section>
+
+    <section class="cartao area-ruas">
+      <h2>Ruas com mais OS</h2>
+      <p class="cartao-nota">15 ruas com mais OS no período · rua · bairro</p>
+      <Ranking :itens="(dados.ruas || []).map((r) => ({ codigo: `${r.cd_distrito}-${r.cd_logradouro}`, nome: `${r.nome} · ${r.bairro}`, total: r.total }))" :cor="CORES.abertas" detalhe="nenhum" />
     </section>
 
     <section class="cartao area-equipes">
