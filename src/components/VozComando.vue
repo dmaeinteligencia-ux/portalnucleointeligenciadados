@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NucleoOrb from './NucleoOrb.vue'
 import { auth, sair } from '../lib/auth'
-import { listarAplicacoes } from '../lib/dados'
+import { listarAplicacoes, destinoApp } from '../lib/dados'
 import { carregarSaude, resumoSaude } from '../lib/saude'
 import { voz, verificarServico, ligar, desligar, atualizarFrases, montarFrases, interpretar, entender, falar, pausar, bipe, definirAutomatica, microfonePermitido, PALAVRA } from '../lib/voz'
 
@@ -147,7 +147,7 @@ async function executarAcao(acao) {
     case 'abrir': {
       const { app, novaAba } = acao
       if (novaAba && app.url && window.open(app.url, '_blank', 'noopener')) return responder(`Abrindo ${app.nome} em nova aba.`)
-      router.push(app.url ? `/aplicacoes/${app.slug}/usar` : `/aplicacoes/${app.slug}`)
+      router.push(destinoApp(app))
       return responder(novaAba ? `O navegador bloqueou a nova aba. Abrindo ${app.nome} no portal.` : `Abrindo ${app.nome}.`)
     }
     case 'ir':

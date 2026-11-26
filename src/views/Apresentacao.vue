@@ -209,7 +209,7 @@ async function copiarLink() {
 
 async function carregar() {
   const [a, l] = await Promise.all([listarAplicacoes(), listarListas().catch(() => [])])
-  apps.value = a
+  apps.value = a.filter((x) => !x.interno) // painéis próprios ainda não entram na apresentação da TV
   listas.value = l
   // Lista guardada que foi excluída: volta para a rotação geral
   if (listaId.value && !l.some(x => x.id === listaId.value)) listaId.value = ''

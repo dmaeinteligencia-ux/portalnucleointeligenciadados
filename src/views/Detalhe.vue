@@ -15,7 +15,7 @@ onMounted(async () => {
   carregado.value = true
 })
 
-const usarNoPortal = () => router.push(`/aplicacoes/${app.value.slug}/usar`)
+const usarNoPortal = () => router.push(app.value.interno ? app.value.url : `/aplicacoes/${app.value.slug}/usar`)
 
 async function abrir() {
   await registrarAcesso(app.value)

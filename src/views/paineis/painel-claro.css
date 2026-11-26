@@ -32,9 +32,9 @@
   background: #0b3f7e; border-bottom: 4px solid #2f9e72; color: #fff;
   -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
-.painel-claro .painel-logo { height: 46px; width: auto; }
+.painel-claro .painel-logo { height: 40px; width: auto; }
 .painel-claro .painel-titulo { flex: 1; min-width: 240px; padding-left: 1.25rem; border-left: 1px solid rgba(255,255,255,.3); }
-.painel-claro .painel-titulo h1 { font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; }
+.painel-claro .painel-titulo h1 { font-size: clamp(1rem, 1.25vw, 1.3rem); font-weight: 700; color: #fff; margin: 0; }
 .painel-claro .painel-titulo p { margin: .1rem 0 0; color: #c9d8ec; }
 .painel-claro .painel-cabecalho .painel-atualizado { margin: 0; text-align: right; color: #c9d8ec; font-size: .82rem; line-height: 1.35; }
 .painel-claro .painel-acoes { display: flex; gap: .5rem; }

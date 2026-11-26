@@ -1,18 +1,24 @@
 import { supabase, modoDemo } from './supabase'
 import { demo } from './demo'
 import { auth } from './auth'
+import { PAINEIS_PROPRIOS } from './paineis-proprios'
 
 const ordenar = lista => [...lista].sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome))
 const ok = async (consulta) => { const { data, error } = await consulta; if (error) throw error; return data }
 
+// todas: true é a lista da Administração e da Saúde, que só tratam o que está cadastrado no Supabase.
+// Fora delas, os painéis próprios do portal entram no catálogo.
 export async function listarAplicacoes({ todas = false } = {}) {
-  if (modoDemo) return ordenar(demo.aplicacoes.filter(a => todas || a.ativo)).map(ajustar)
+  const proprios = todas ? [] : PAINEIS_PROPRIOS
+  if (modoDemo) return ordenar([...demo.aplicacoes.filter(a => todas || a.ativo), ...proprios]).map(ajustar)
   let q = supabase.from('aplicacoes').select('*').order('ordem').order('nome')
   if (!todas) q = q.eq('ativo', true)
-  return (await ok(q)).map(ajustar)
+  return ordenar([...(await ok(q)), ...proprios]).map(ajustar)
 }
 
 export async function obterAplicacao(slug) {
+  const proprio = PAINEIS_PROPRIOS.find(a => a.slug === slug)
+  if (proprio) return proprio
   if (modoDemo) return ajustar(demo.aplicacoes.find(a => a.slug === slug) || null)
   return ajustar(await ok(supabase.from('aplicacoes').select('*').eq('slug', slug).maybeSingle()))
 }
@@ -54,6 +60,7 @@ export async function excluirLista(id) {
 
 export async function registrarAcesso(app) {
   if (auth.usuario?.papel === 'apresentacao') return // a conta da TV não grava nada
+  if (app?.interno) return // painel próprio não está na tabela aplicacoes
   const registro = { email: auth.usuario.email, aplicacao_id: app.id }
   if (modoDemo) demo.acessos.unshift({ ...registro, id: Date.now(), em: new Date().toISOString() })
   else await supabase.from('acessos').insert(registro)
@@ -137,6 +144,9 @@ function ajustar(app) {
 }
 // "Publicar na web" gera app.powerbi.com/view?r=..., que qualquer pessoa com o link consegue abrir.
 export const linkPublicoPowerBI = url => /powerbi\.com\/view\?r=/i.test(url || '')
+
+// Para onde levar quem abre um item do catálogo
+export const destinoApp = app => app.interno ? app.url : app.url ? `/aplicacoes/${app.slug}/usar` : `/aplicacoes/${app.slug}`
 
 export const rotuloStatus = { producao: 'Em produção', piloto: 'Piloto', desenvolvimento: 'Em desenvolvimento', desativado: 'Desativado' }
 // Desativado = sem uso no momento: fica no catálogo (seção "Desativados"), fora do monitoramento e dos alertas.
