@@ -180,6 +180,16 @@
 .painel-claro .lista-situacao li { display: grid; grid-template-columns: auto 1fr auto 3.5rem; align-items: center; gap: .3rem; }
 .painel-claro .lista-situacao b, .painel-claro .lista-situacao span { text-align: right; font-variant-numeric: tabular-nums; }
 
+/* Mapa de bolhas por bairro (Leaflet + OpenStreetMap) */
+.painel-claro .mapa-bairros { margin-top: .6rem; border: 1px solid var(--pc-linha); border-radius: 10px; overflow: hidden; }
+.painel-claro .mapa-bairros-area { height: 420px; width: 100%; background: #f6f8fb; }
+.painel-claro .mapa-bairros-rodape { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .4rem 1.2rem; padding: .55rem .8rem; border-top: 1px solid var(--pc-linha); }
+.painel-claro .mapa-bairros-legenda { display: flex; align-items: center; gap: .8rem; }
+.painel-claro .mapa-bairros-legenda span { display: inline-flex; align-items: center; gap: .35rem; font-variant-numeric: tabular-nums; }
+.painel-claro .mapa-bairros-legenda i { display: block; border-radius: 50%; border: 1px solid #fff; opacity: .6; }
+.painel-claro .leaflet-container { font: inherit; }
+@media print { .painel-claro .mapa-bairros-area { break-inside: avoid; } }
+
 /* Mapa */
 .painel-claro .mapa-pontos svg { width: 100%; height: auto; display: block; margin-top: .6rem; }
 .painel-claro .mapa-fundo { fill: #f6f8fb; stroke: var(--pc-linha); }

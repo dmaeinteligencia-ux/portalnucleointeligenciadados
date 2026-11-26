@@ -114,6 +114,11 @@ function demoPainel(caminho, params) {
     motivos: lista('Motivo', 6, 6000).map(({ codigo, nome, total }) => ({ codigo, nome, total })),
     bairros: lista('Bairro', 15, 3000), regioes: lista('Região', 3, 30000), equipes: lista('Equipe', 15, 6000),
     mapa, cobertura_mapa: { com_coordenada: Math.round(os * 0.53), total: os },
+    bairros_mapa: Array.from({ length: 60 }, (_, i) => {
+      const t = Math.round(3000 / (i + 1.3)), ang = r() * Math.PI * 2, dist = 0.01 + r() * 0.05
+      return { codigo: i + 1, nome: `Bairro ${i + 1}`, total: t, executadas: Math.round(t * 0.82), mediana_horas: 8 + r() * 30,
+        lat: i % 17 === 16 ? null : -18.918 + Math.sin(ang) * dist, lon: i % 17 === 16 ? null : -48.277 + Math.cos(ang) * dist * 1.1 }
+    }),
     semana_hora: Array.from({ length: 7 * 24 }, (_, i) => {
       const dia = Math.floor(i / 24) + 1, hora = i % 24
       const curva = Math.exp(-((hora - 10) ** 2) / 18) + 0.5 * Math.exp(-((hora - 15) ** 2) / 10) + 0.04
