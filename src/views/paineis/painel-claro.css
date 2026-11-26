@@ -90,7 +90,8 @@
 .painel-claro .area-mensal { grid-column: span 8; } .painel-claro .area-situacao { grid-column: span 4; }
 .painel-claro .area-calor { grid-column: span 7; } .painel-claro .area-tempo { grid-column: span 5; }
 .painel-claro .area-servicos, .painel-claro .area-sintomas { grid-column: span 6; }
-.painel-claro .area-mapa, .painel-claro .area-bairros { grid-column: span 6; }
+.painel-claro .area-mapa { grid-column: 1 / -1; }
+.painel-claro .area-bairros, .painel-claro .area-ruas { grid-column: span 6; }
 .painel-claro .area-equipes { grid-column: span 7; } .painel-claro .area-idade { grid-column: span 5; }
 .painel-claro .area-tabela { grid-column: 1 / -1; }
 
@@ -184,7 +185,7 @@
 
 /* Mapa de bolhas por bairro (Leaflet + OpenStreetMap) */
 .painel-claro .mapa-bairros { margin-top: .6rem; border: 1px solid var(--pc-linha); border-radius: 10px; overflow: hidden; }
-.painel-claro .mapa-bairros-area { height: 420px; width: 100%; background: #f6f8fb; }
+.painel-claro .mapa-bairros-area { height: clamp(420px, 68vh, 760px); width: 100%; background: #f6f8fb; }
 .painel-claro .mapa-bairros-rodape { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .4rem 1.2rem; padding: .55rem .8rem; border-top: 1px solid var(--pc-linha); }
 .painel-claro .mapa-bairros-legenda { display: flex; align-items: center; gap: .8rem; }
 .painel-claro .mapa-bairros-legenda span { display: inline-flex; align-items: center; gap: .35rem; font-variant-numeric: tabular-nums; }
